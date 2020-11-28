@@ -36,7 +36,7 @@ module.exports = (env, argv) => {
         },
         plugins: [
             new HtmlWebPackPlugin({
-                filename: isProd ? "./public/index.html" : "./dist/index.html",
+                filename: "index.html",
                 template: 'src/index.html',
                 scriptLoading: 'defer'
             })

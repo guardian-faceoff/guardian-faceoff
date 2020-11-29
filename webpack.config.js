@@ -1,5 +1,5 @@
 const path = require('path');
-const HtmlWebPackPlugin = require("html-webpack-plugin");
+const HtmlWebPackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production';
@@ -8,13 +8,13 @@ module.exports = (env, argv) => {
     return {
         mode: isProd ? 'production' : 'development',
         entry: {
-            main: path.resolve(APP_DIR, 'index.js')
+            main: path.resolve(APP_DIR, 'index.js'),
         },
         output: {
             path: path.resolve(__dirname, isProd ? './public' : './dist'),
-            filename: isProd ? '[name].[contenthash].js' : '[name].js'
+            filename: isProd ? '[name].[contenthash].js' : '[name].js',
         },
-        module: {        
+        module: {
             rules: [
                 {
                     enforce: 'pre',
@@ -24,40 +24,43 @@ module.exports = (env, argv) => {
                 },
                 {
                     test: /\.(js|jsx)$/,
-                    include: [
-                        path.resolve(__dirname, "src")
-                    ],
-                    use: [{
-                        loader: 'babel-loader',
-                        options: {
-                            presets: [
-                                [
-                                    '@babel/preset-env',
-                                    {
-                                        targets: ['last 1 version', 'ie >= 11'],
-                                    },
+                    include: [path.resolve(__dirname, 'src')],
+                    use: [
+                        {
+                            loader: 'babel-loader',
+                            options: {
+                                presets: [
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            targets: [
+                                                'last 1 version',
+                                                'ie >= 11',
+                                            ],
+                                        },
+                                    ],
+                                    '@babel/preset-react',
                                 ],
-                                '@babel/preset-react',
-                            ],
-                            plugins: ['@babel/plugin-transform-runtime'],
+                                plugins: ['@babel/plugin-transform-runtime'],
+                            },
                         },
-                    }],
-                }
-            ]
+                    ],
+                },
+            ],
         },
         devtool: 'source-map',
         devServer: {
             contentBase: path.join(__dirname, '.'),
             compress: true,
             port: 9000,
-            https: true
+            https: true,
         },
         plugins: [
             new HtmlWebPackPlugin({
-                filename: "index.html",
+                filename: 'index.html',
                 template: 'src/index.html',
-                scriptLoading: 'defer'
-            })
-        ]
+                scriptLoading: 'defer',
+            }),
+        ],
     };
 };

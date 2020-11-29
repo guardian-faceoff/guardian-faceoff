@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { withRouter } from "react-router-dom";
-import { makeStyles } from '@material-ui/core/styles';
+import React from 'react';
+import { withRouter } from 'react-router-dom';
+// import { makeStyles } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme) => {
-    return {};
-});
+// const useStyles = makeStyles((theme) => {
+//     return {};
+// });
 
-
-const ListView = ({ logout, match, history }) => {
+// const ListView = ({ logout, match, history }) => {
+const ListView = () => {
     // const classes = useStyles();
     // const [ state, setState ] = useState({});
     return (
         <>
-            <Card>ListView</Card>
+            <div>ListView</div>
         </>
     );
 };

@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React from 'react';
 // import { VERSION, DEFAULT_STATE, BUNGIE_APP_ID, API_KEY, TOKEN_URL, AUTHORIZE_URL, LOCATIONS, ACTIVITIES, WEAPONS, ELEMENTS, ENEMIES, ALL_KEYS } from './Constants';
+import { HashRouter, Route, Redirect, Switch } from 'react-router-dom';
 import {
-    HashRouter,
-    Route,
-    Redirect,
-    Switch
-} from "react-router-dom";
-import { Button, LinearProgress, Grid, Paper, Typography } from '@material-ui/core';
-import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
+    Button,
+    // LinearProgress,
+    Grid,
+    Paper,
+    Typography,
+} from '@material-ui/core';
+import {
+    createMuiTheme,
+    ThemeProvider,
+    makeStyles,
+} from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import { makeStyles } from '@material-ui/core/styles';
-
 
 // const createFormParams = (params) => Object.keys(params).map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
 
@@ -42,7 +45,7 @@ import { makeStyles } from '@material-ui/core/styles';
 const useStyles = makeStyles((theme) => {
     return {
         grid: {
-            height: '100vh'
+            height: '100vh',
         },
         paper: {
             width: '37em',
@@ -53,29 +56,28 @@ const useStyles = makeStyles((theme) => {
             },
         },
         button: {
-            margin: theme.spacing(4)
-        }
+            margin: theme.spacing(4),
+        },
     };
 });
 
 const App = () => {
     const classes = useStyles();
     // const [ state, setState ] = useState({ ...DEFAULT_STATE, loggedIn: false });
-    const [ state, setState ] = useState({ loading: false, loggedIn: false });
-
+    // const [state] = useState({ loading: false, loggedIn: false });
 
     const theme = React.useMemo(() => {
         return createMuiTheme({
             shape: {
                 borderRadius: 10,
-            }, 
+            },
             palette: {
                 type: 'dark',
             },
         });
     }, []);
 
-    // const login = () => { 
+    // const login = () => {
     //     window.location = AUTHORIZE_URL;
     // };
 
@@ -123,32 +125,38 @@ const App = () => {
     // }, []);
 
     const getContentJsx = () => {
-        if(state.loading){
-            return <LinearProgress variant="determinate" value={10}/>;
-        } else {
-            if (state.loggedIn) {
-                return <ListView logout={logout}></ListView>;
-            } else {
-                return (
-                    <Grid
-                        container
-                        spacing={0}
-                        align="center"
-                        justify="center"
-                        direction="column"
-                        className={classes.grid}
-                    >
-                        <Grid item>
-                            <Paper className={classes.paper}>
-                                <Typography variant="h2">Guardian Faceoff</Typography>
-                                <Button className={classes.button} size="large" color="primary" variant="contained" onClick={() => login()}>Login</Button>
-                                {/* <Typography variant="body2">d2-bounties requires you securely authenticate with Bungie.net every 30 minutes</Typography> */}
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                )
-            }
-        }  
+        // if (state.loading) {
+        //     return <LinearProgress variant="determinate" value={10} />;
+        // }
+        // if (state.loggedIn) {
+        //     return <ListView logout={logout} />;
+        // }
+        return (
+            <Grid
+                container
+                spacing={0}
+                align="center"
+                justify="center"
+                direction="column"
+                className={classes.grid}
+            >
+                <Grid item>
+                    <Paper className={classes.paper}>
+                        <Typography variant="h2">Guardian Faceoff</Typography>
+                        <Button
+                            className={classes.button}
+                            size="large"
+                            color="primary"
+                            variant="contained"
+                            // onClick={() => login()}
+                        >
+                            Login
+                        </Button>
+                        {/* <Typography variant="body2">d2-bounties requires you securely authenticate with Bungie.net every 30 minutes</Typography> */}
+                    </Paper>
+                </Grid>
+            </Grid>
+        );
     };
 
     return (
@@ -156,10 +164,10 @@ const App = () => {
             <CssBaseline />
             <HashRouter>
                 <Switch>
-                    <Route exact path={"/"}>
-                        { getContentJsx() }
+                    <Route exact path="/">
+                        {getContentJsx()}
                     </Route>
-                    <Redirect to='/' />
+                    <Redirect to="/" />
                 </Switch>
             </HashRouter>
         </ThemeProvider>

@@ -17,13 +17,31 @@ module.exports = (env, argv) => {
         module: {        
             rules: [
                 {
+                    enforce: 'pre',
+                    test: /\.js$/,
+                    exclude: /node_modules/,
+                    loader: 'eslint-loader',
+                },
+                {
                     test: /\.(js|jsx)$/,
                     include: [
                         path.resolve(__dirname, "src")
                     ],
-                    use: {
-                        loader: "babel-loader"
-                    }
+                    use: [{
+                        loader: 'babel-loader',
+                        options: {
+                            presets: [
+                                [
+                                    '@babel/preset-env',
+                                    {
+                                        targets: ['last 1 version', 'ie >= 11'],
+                                    },
+                                ],
+                                '@babel/preset-react',
+                            ],
+                            plugins: ['@babel/plugin-transform-runtime'],
+                        },
+                    }],
                 }
             ]
         },

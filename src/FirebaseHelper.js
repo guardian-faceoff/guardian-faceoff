@@ -4,7 +4,7 @@ import 'firebase/firestore';
 
 // Configure Firebase.
 const firebaseConfig = {
-    apiKey: 'AIzaSyAzF8LX1r-98VeuiPZxcJypxuno9CFVYyU',
+    apiKey: 'AIzaSyAdeDCJmaLped2kNQarq7_CrK9DRYlkhsM',
     authDomain: 'guardian-faceoff.firebaseapp.com',
     databaseURL: 'https://guardian-faceoff.firebaseio.com',
     projectId: 'guardian-faceoff',

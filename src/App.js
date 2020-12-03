@@ -11,6 +11,7 @@ import { grey, teal } from '@material-ui/core/colors';
 import Navigation from './components/Navigation';
 import { AppContextWrapper } from './AppContext';
 import Routes from './Routes';
+import SnackBarManager from './SnackBarManager';
 
 const useStyles = makeStyles((theme) => {
     return {
@@ -61,6 +62,7 @@ const App = () => {
                         <Box className={classes.container}>
                             <Container>
                                 <Routes />
+                                <SnackBarManager />
                             </Container>
                         </Box>
                     </Box>

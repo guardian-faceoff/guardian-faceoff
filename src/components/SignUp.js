@@ -3,7 +3,7 @@ import { Button, Grid, Paper, TextField, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
-import { loginWithEmail, registerWithEmail } from '../FirebaseHelper';
+import { registerWithEmail } from '../FirebaseHelper';
 import { AppContext } from '../AppContext';
 
 const useStyles = makeStyles((theme) => {
@@ -41,20 +41,12 @@ const Login = ({ history }) => {
             ...appState,
             loading: true,
         });
+
         try {
-            await loginWithEmail(email, password);
+            await registerWithEmail(email, password);
             history.push('/');
-        } catch (e) {
-            if (e.code === 'auth/user-not-found') {
-                try {
-                    await registerWithEmail(email, password);
-                    history.push('/');
-                } catch (e2) {
-                    showError(e2.message || 'Error registering');
-                }
-            } else {
-                showError(e.message || 'Error logging in');
-            }
+        } catch (e2) {
+            showError(e2.message || 'Error registering');
             setAppState({
                 ...appState,
                 loading: false,

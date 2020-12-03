@@ -80,6 +80,9 @@ const useStyles = makeStyles((theme) => ({
             display: 'none',
         },
     },
+    navButton: {
+        marginLeft: theme.spacing(),
+    },
 }));
 
 const Navigation = ({ history }) => {
@@ -136,11 +139,21 @@ const Navigation = ({ history }) => {
             {!appState.currentUser && (
                 <MenuItem
                     onClick={() => {
+                        history.push('/signup');
+                        handleMenuClose();
+                    }}
+                >
+                    Sign Up
+                </MenuItem>
+            )}
+            {!appState.currentUser && (
+                <MenuItem
+                    onClick={() => {
                         history.push('/login');
                         handleMenuClose();
                     }}
                 >
-                    Login / Sign Up
+                    Login
                 </MenuItem>
             )}
             {appState.currentUser && (
@@ -179,11 +192,21 @@ const Navigation = ({ history }) => {
             {!appState.currentUser && (
                 <MenuItem
                     onClick={() => {
+                        history.push('/signup');
+                        handleMenuClose();
+                    }}
+                >
+                    Sign Up
+                </MenuItem>
+            )}
+            {!appState.currentUser && (
+                <MenuItem
+                    onClick={() => {
                         history.push('/login');
                         handleMenuClose();
                     }}
                 >
-                    Login / Sign Up
+                    Login
                 </MenuItem>
             )}
             {!appState.currentUser && (
@@ -209,23 +232,39 @@ const Navigation = ({ history }) => {
                     <div className={classes.grow} />
                     <div className={classes.sectionDesktop}>
                         {!appState.currentUser && (
-                            <Button
-                                onClick={() => {
-                                    history.push('/login');
-                                }}
+                            <>
+                                <Button
+                                    onClick={() => {
+                                        history.push('/signup');
+                                    }}
+                                    color="secondary"
+                                    variant="contained"
+                                    className={classes.navButton}
+                                >
+                                    Sign up
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        history.push('/login');
+                                    }}
+                                    color="inherit"
+                                    variant="outlined"
+                                    className={classes.navButton}
+                                >
+                                    Login
+                                </Button>
+                            </>
+                        )}
+                        {appState.currentUser && (
+                            <IconButton
+                                aria-label="show 2 new notifications"
                                 color="inherit"
                             >
-                                Login / Sign up
-                            </Button>
+                                <Badge badgeContent={2} color="error">
+                                    <NotificationsIcon />
+                                </Badge>
+                            </IconButton>
                         )}
-                        <IconButton
-                            aria-label="show 2 new notifications"
-                            color="inherit"
-                        >
-                            <Badge badgeContent={2} color="error">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton>
                         <IconButton
                             edge="end"
                             aria-label="account of current user"
@@ -238,14 +277,16 @@ const Navigation = ({ history }) => {
                         </IconButton>
                     </div>
                     <div className={classes.sectionMobile}>
-                        <IconButton
-                            aria-label="show 2 new notifications"
-                            color="inherit"
-                        >
-                            <Badge badgeContent={2} color="error">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton>
+                        {appState.currentUser && (
+                            <IconButton
+                                aria-label="show 2 new notifications"
+                                color="inherit"
+                            >
+                                <Badge badgeContent={2} color="error">
+                                    <NotificationsIcon />
+                                </Badge>
+                            </IconButton>
+                        )}
                         <IconButton
                             aria-label="show more"
                             aria-controls={mobileMenuId}

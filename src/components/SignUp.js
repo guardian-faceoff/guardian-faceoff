@@ -94,7 +94,7 @@ const Login = ({ history }) => {
                         variant="contained"
                         onClick={() => login()}
                     >
-                        Login
+                        Sign Up
                     </Button>
                 </Paper>
             </Grid>

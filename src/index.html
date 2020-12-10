@@ -12,6 +12,14 @@
 
 <body>
     <div id="app"></div>
+    <script type="text/javascript">
+        window.RESOURCES = {
+            BUNGIE_APP_ID: "<%= htmlWebpackPlugin.options.globalConstants.BUNGIE_APP_ID %>",
+            BUNGIE_API_KEY: "<%= htmlWebpackPlugin.options.globalConstants.BUNGIE_API_KEY %>",
+            VERSION: "<%= htmlWebpackPlugin.options.globalConstants.VERSION %>",
+            PRODUCTION: "<%= htmlWebpackPlugin.options.globalConstants.PRODUCTION %>"
+        };
+    </script>
 </body>
 
 </html>

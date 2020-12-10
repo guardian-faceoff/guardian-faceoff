@@ -55,35 +55,17 @@ const SnackBarManager = () => {
 
     const getCloseAction = () => {
         return (
-            <IconButton
-                aria-label="close"
-                color="inherit"
-                onClick={handleClose}
-            >
+            <IconButton aria-label="close" color="inherit" onClick={handleClose}>
                 <CloseIcon />
             </IconButton>
         );
     };
 
     return (
-        <Snackbar
-            key={messageInfo ? messageInfo.key : undefined}
-            open={open}
-            autoHideDuration={3000}
-            onClose={handleClose}
-            onExited={handleExited}
-        >
+        <Snackbar key={messageInfo ? messageInfo.key : undefined} open={open} autoHideDuration={3000} onClose={handleClose} onExited={handleExited}>
             <SnackbarContent
-                className={
-                    messageInfo && messageInfo.snackBar
-                        ? classes[`paper-${messageInfo.snackBar.severity}`]
-                        : ''
-                }
-                message={
-                    messageInfo && messageInfo.snackBar
-                        ? messageInfo.snackBar.message
-                        : ''
-                }
+                className={messageInfo && messageInfo.snackBar ? classes[`paper-${messageInfo.snackBar.severity}`] : ''}
+                message={messageInfo && messageInfo.snackBar ? messageInfo.snackBar.message : ''}
                 action={getCloseAction()}
             />
         </Snackbar>

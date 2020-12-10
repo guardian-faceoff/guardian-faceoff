@@ -1,14 +1,5 @@
 import React, { useContext } from 'react';
-import {
-    AppBar,
-    Toolbar,
-    IconButton,
-    Typography,
-    Menu,
-    MenuItem,
-    Badge,
-    Button,
-} from '@material-ui/core';
+import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Badge, Button } from '@material-ui/core';
 import { fade, makeStyles } from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
 // import SearchIcon from '@material-ui/icons/Search';
@@ -89,7 +80,7 @@ const Navigation = ({ history }) => {
     const classes = useStyles();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
-    const { appState } = useContext(AppContext);
+    const { appState, login } = useContext(AppContext);
 
     const isMenuOpen = Boolean(anchorEl);
     const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -139,17 +130,7 @@ const Navigation = ({ history }) => {
             {!appState.currentUser && (
                 <MenuItem
                     onClick={() => {
-                        history.push('/signup');
-                        handleMenuClose();
-                    }}
-                >
-                    Sign Up
-                </MenuItem>
-            )}
-            {!appState.currentUser && (
-                <MenuItem
-                    onClick={() => {
-                        history.push('/login');
+                        login();
                         handleMenuClose();
                     }}
                 >
@@ -188,28 +169,18 @@ const Navigation = ({ history }) => {
             >
                 Home
             </MenuItem>
-            <MenuItem onClick={handleMenuClose}>My Account</MenuItem>
+            {appState.currentUser && <MenuItem onClick={handleMenuClose}>My Account</MenuItem>}
             {!appState.currentUser && (
                 <MenuItem
                     onClick={() => {
-                        history.push('/signup');
-                        handleMenuClose();
-                    }}
-                >
-                    Sign Up
-                </MenuItem>
-            )}
-            {!appState.currentUser && (
-                <MenuItem
-                    onClick={() => {
-                        history.push('/login');
+                        login();
                         handleMenuClose();
                     }}
                 >
                     Login
                 </MenuItem>
             )}
-            {!appState.currentUser && (
+            {appState.currentUser && (
                 <MenuItem
                     onClick={() => {
                         logUserOut();
@@ -232,70 +203,43 @@ const Navigation = ({ history }) => {
                     <div className={classes.grow} />
                     <div className={classes.sectionDesktop}>
                         {!appState.currentUser && (
-                            <>
-                                <Button
-                                    onClick={() => {
-                                        history.push('/signup');
-                                    }}
-                                    color="secondary"
-                                    variant="contained"
-                                    className={classes.navButton}
-                                >
-                                    Sign up
-                                </Button>
-                                <Button
-                                    onClick={() => {
-                                        history.push('/login');
-                                    }}
-                                    color="inherit"
-                                    variant="outlined"
-                                    className={classes.navButton}
-                                >
-                                    Login
-                                </Button>
-                            </>
+                            <Button
+                                onClick={() => {
+                                    login();
+                                }}
+                                color="secondary"
+                                variant="contained"
+                                className={classes.navButton}
+                            >
+                                Login
+                            </Button>
                         )}
                         {appState.currentUser && (
-                            <IconButton
-                                aria-label="show 2 new notifications"
-                                color="inherit"
-                            >
+                            <IconButton aria-label="show 2 new notifications" color="inherit">
                                 <Badge badgeContent={2} color="error">
                                     <NotificationsIcon />
                                 </Badge>
                             </IconButton>
                         )}
-                        <IconButton
-                            edge="end"
-                            aria-label="account of current user"
-                            aria-controls={menuId}
-                            aria-haspopup="true"
-                            onClick={handleProfileMenuOpen}
-                            color="inherit"
-                        >
-                            <MenuIcon />
-                        </IconButton>
+                        {appState.currentUser && (
+                            <IconButton edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit">
+                                <MenuIcon />
+                            </IconButton>
+                        )}
                     </div>
                     <div className={classes.sectionMobile}>
                         {appState.currentUser && (
-                            <IconButton
-                                aria-label="show 2 new notifications"
-                                color="inherit"
-                            >
+                            <IconButton aria-label="show 2 new notifications" color="inherit">
                                 <Badge badgeContent={2} color="error">
                                     <NotificationsIcon />
                                 </Badge>
                             </IconButton>
                         )}
-                        <IconButton
-                            aria-label="show more"
-                            aria-controls={mobileMenuId}
-                            aria-haspopup="true"
-                            onClick={handleMobileMenuOpen}
-                            color="inherit"
-                        >
-                            <MenuIcon />
-                        </IconButton>
+                        {appState.currentUser && (
+                            <IconButton aria-label="show more" aria-controls={mobileMenuId} aria-haspopup="true" onClick={handleMobileMenuOpen} color="inherit">
+                                <MenuIcon />
+                            </IconButton>
+                        )}
                     </div>
                 </Toolbar>
             </AppBar>

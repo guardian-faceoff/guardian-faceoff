@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const firebaseAdmin = require('firebase-admin');
 const util = require('util');
 const uuid = require('react-uuid');
-const { getTokenFromBungie, getMembershipInfo, getProfile, getActivityHistory } = require('./bungieHelper');
+const { getTokenFromBungie, getMembershipInfo, getProfile } = require('./bungieHelper');
 const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL, MEMBERSHIP_TYPES } = require('../src/Constants.json');
 
 let APP_URL;

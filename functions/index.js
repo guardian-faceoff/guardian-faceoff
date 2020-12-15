@@ -7,12 +7,14 @@ const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL } = require(
 
 let APP_URL;
 let REDIRECT_URL;
-if (process.env.NODE_ENV === 'development') {
+if (process.env.FUNCTIONS_EMULATOR === 'true') {
+    console.log('Running in emulator mode!');
     APP_URL = 'http://localhost:5000';
     REDIRECT_URL = 'http://localhost:5001/guardian-faceoff/us-central1/bungieRedirectUrl';
 } else {
-    APP_URL = 'https://guardian-faceoff.firebaseapp.com/';
-    REDIRECT_URL = `${APP_URL}guardian-faceoff/us-central1/bungieRedirectUrl`;
+    console.log('Running in production mode!');
+    APP_URL = 'https://guardian-faceoff.web.app/';
+    REDIRECT_URL = 'https://us-central1-guardian-faceoff.cloudfunctions.net/bungieRedirectUrl';
 }
 
 const firebaseApp = firebaseAdmin.initializeApp();

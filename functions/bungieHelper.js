@@ -23,29 +23,29 @@ const getTokenFromBungie = async (code) => {
     });
 };
 
-const refreshTokenFromBungie = async (refreshToken) => {
-    return await axios({
-        url: TOKEN_URL,
-        method: 'post',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        data: createFormParams({
-            grant_type: 'refresh_token',
-            client_id: functions.config().bungie.app_id,
-            refresh_token: refreshToken,
-            client_secret: functions.config().bungie.client_secret,
-        }),
-    });
-};
+// const refreshTokenFromBungie = async (refreshToken) => {
+//     return await axios({
+//         url: TOKEN_URL,
+//         method: 'post',
+//         headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded',
+//         },
+//         data: createFormParams({
+//             grant_type: 'refresh_token',
+//             client_id: functions.config().bungie.app_id,
+//             refresh_token: refreshToken,
+//             client_secret: functions.config().bungie.client_secret,
+//         }),
+//     });
+// };
 
-const getMembershipInfo = async (accessToken) => {
-    return await axios.get('https://www.bungie.net/Platform/User/GetMembershipsForCurrentUser/', {
+const getMembershipInfo = async (membershipId, membershipType) => {
+    console.log(functions.config().bungie.api_key);
+    return await axios.get(`https://www.bungie.net/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`, {
         headers: {
             'X-API-Key': functions.config().bungie.api_key,
-            Authorization: `Bearer ${accessToken}`,
         },
     });
 };
 
-module.exports = { getTokenFromBungie, refreshTokenFromBungie, getMembershipInfo };
+module.exports = { getTokenFromBungie, getMembershipInfo };

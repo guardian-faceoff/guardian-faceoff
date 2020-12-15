@@ -2,8 +2,8 @@ const functions = require('firebase-functions');
 const firebaseAdmin = require('firebase-admin');
 const util = require('util');
 const uuid = require('react-uuid');
-const { getTokenFromBungie, refreshTokenFromBungie, getMembershipInfo } = require('./bungieHelper');
-const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL } = require('../src/Constants.json');
+const { getTokenFromBungie, getMembershipInfo } = require('./bungieHelper');
+const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL, MEMBERSHIP_TYPES } = require('../src/Constants.json');
 
 let APP_URL;
 let REDIRECT_URL;
@@ -20,48 +20,35 @@ if (process.env.FUNCTIONS_EMULATOR === 'true') {
 const firebaseApp = firebaseAdmin.initializeApp();
 const db = firebaseAdmin.firestore();
 
-const updateUserInfo = async (bungieId, skipTokenStuff) => {
-    const userDoc = await db.collection('userAuthData').doc(bungieId).get();
-    if (userDoc.exists) {
-        const { accessToken, refreshToken } = userDoc.data();
-        if (!skipTokenStuff) {
-            const refreshResp = await refreshTokenFromBungie(refreshToken);
-            if (refreshResp) {
-                await db.collection('userAuthData').doc(bungieId).set(
-                    {
-                        accessToken: refreshResp.data.access_token,
-                        refreshToken: refreshResp.data.refresh_token,
-                    },
-                    { merge: true }
-                );
-            }
-        }
-        const membershipResp = await getMembershipInfo(accessToken);
-        const { destinyMemberships, primaryMembershipId } = membershipResp.data.Response;
-        const primaryMembership = destinyMemberships.filter((membership) => membership.membershipId === primaryMembershipId)[0];
-        db.collection('userData')
-            .doc(bungieId)
-            .set(
-                {
-                    membership: { ...primaryMembership, iconURL: IMG_URL_ROOT + primaryMembership.iconPath },
-                },
-                { merge: true }
-            );
-        const userDataToUpdate = {
-            displayName: membershipResp.data.Response.bungieNetUser.displayName,
-            photoURL: IMG_URL_ROOT + membershipResp.data.Response.bungieNetUser.profilePicturePath,
-        };
+const updateUserInfo = async (bungieId) => {
+    const membershipResp = await getMembershipInfo(bungieId, MEMBERSHIP_TYPES.ALL);
+    const { destinyMemberships, primaryMembershipId } = membershipResp.data.Response;
+    const primaryMembership = destinyMemberships.filter((membership) => membership.membershipId === primaryMembershipId)[0];
+    db.collection('userData')
+        .doc(bungieId)
+        .set(
+            {
+                membership: { ...primaryMembership, iconURL: IMG_URL_ROOT + primaryMembership.iconPath },
+            },
+            { merge: true }
+        );
+    const userDataToUpdate = {
+        displayName: membershipResp.data.Response.bungieNetUser.displayName,
+        photoURL: IMG_URL_ROOT + membershipResp.data.Response.bungieNetUser.profilePicturePath,
+    };
+    try {
+        await firebaseApp.auth().updateUser(bungieId, userDataToUpdate);
+    } catch (e1) {
+        // User may not be created yet...trying that
         try {
-            await firebaseApp.auth().updateUser(bungieId, userDataToUpdate);
-        } catch (e) {
-            console.log('User may not be created yet...trying that.');
             await firebaseApp.auth().createUser({
                 uid: bungieId,
                 ...userDataToUpdate,
             });
+        } catch (e2) {
+            console.error(e1, e2);
+            throw new functions.https.HttpsError('aborted', 'Failed to update user info.', e2);
         }
-    } else {
-        throw new functions.https.HttpsError('aborted', 'No such user to update.');
     }
 };
 
@@ -79,18 +66,9 @@ exports.bungieRedirectUrl = functions.https.onRequest(async (req, res) => {
 
     try {
         const { data } = await getTokenFromBungie(code);
-        const accessToken = data.access_token;
-        const refreshToken = data.refresh_token;
         const bungieId = data.membership_id;
         const firebaseToken = await firebaseApp.auth().createCustomToken(bungieId);
 
-        await db.collection('userAuthData').doc(bungieId).set(
-            {
-                accessToken,
-                refreshToken,
-            },
-            { merge: true }
-        );
         await updateUserInfo(bungieId, true);
 
         return res.redirect(`${APP_URL}?code=${code}&state=${encodedState}&login_token=${encodeURIComponent(firebaseToken)}`);
@@ -108,7 +86,6 @@ exports.getBungieAuthUrl = functions.https.onCall(async () => {
             created: Date.now(),
         });
 
-        console.log(functions.config(), functions.config().bungie.app_id);
         return util.format(AUTHORIZE_URL, functions.config().bungie.app_id) + encodeURIComponent(`${uniqueId}|${REDIRECT_URL}`);
     } catch (err) {
         throw new functions.https.HttpsError('aborted', 'Failed to get bungie auth url.', err);

@@ -8,7 +8,15 @@
         "3": "Steam",
         "4": "Blizzard",
         "5": "Stadia",
-        "10": "Demon"
+        "10": "Demon",
+        "-1": "All",
+        "XBOX": 1,
+        "PSN": 2,
+        "STEAM": 3,
+        "BLIZZARD": 4,
+        "STADIA": 5,
+        "DEMON": 10,
+        "ALL": -1
     },
     "MATCH_STATE": {
         "WAITING_FOR_PLAYERS": 1,

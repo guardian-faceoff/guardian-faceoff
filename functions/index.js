@@ -106,7 +106,6 @@ exports.getBungieAuthUrl = functions.https.onCall(async () => {
             created: Date.now(),
         });
 
-        console.log(functions.config(), functions.config().bungie.app_id);
         return util.format(AUTHORIZE_URL, functions.config().bungie.app_id) + encodeURIComponent(`${uniqueId}|${REDIRECT_URL}`);
     } catch (err) {
         throw new functions.https.HttpsError('aborted', 'Failed to get bungie auth url.', err);

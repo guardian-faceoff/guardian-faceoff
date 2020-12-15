@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const firebaseAdmin = require('firebase-admin');
 const util = require('util');
 const uuid = require('react-uuid');
-const { getTokenFromBungie, getMembershipInfo } = require('./bungieHelper');
+const { getTokenFromBungie, getMembershipInfo, getProfile, getActivityHistory } = require('./bungieHelper');
 const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL, MEMBERSHIP_TYPES } = require('../src/Constants.json');
 
 let APP_URL;
@@ -24,10 +24,21 @@ const updateUserInfo = async (bungieId) => {
     const membershipResp = await getMembershipInfo(bungieId, MEMBERSHIP_TYPES.ALL);
     const { destinyMemberships, primaryMembershipId } = membershipResp.data.Response;
     const primaryMembership = destinyMemberships.filter((membership) => membership.membershipId === primaryMembershipId)[0];
+
+    const profileResp = await getProfile(primaryMembership.membershipType, primaryMembershipId);
+    const { characters } = profileResp.data.Response;
+    const characterArray = Object.keys(characters.data).map((characterId) => characters.data[characterId]);
+    const currentCharacter = characterArray.sort((a, b) => {
+        const aDateMs = new Date(a.dateLastPlayed).getTime();
+        const bDateMs = new Date(b.dateLastPlayed).getTime();
+        return bDateMs - aDateMs;
+    })[0];
+
     db.collection('userData')
         .doc(bungieId)
         .set(
             {
+                currentCharacter,
                 membership: { ...primaryMembership, iconURL: IMG_URL_ROOT + primaryMembership.iconPath },
             },
             { merge: true }
@@ -231,4 +242,8 @@ exports.cancelMatch = functions.https.onCall(async (matchId, context) => {
 });
 
 // TODO: scheduled function to get scores and update each match, and clean up expired matches (every 3 mins)
+
+// const activityHistory = await getActivityHistory(primaryMembership.membershipType, primaryMembershipId, currentCharacter.characterId);
+//     console.log(activityHistory.data.Response.activities[0].activityDetails, activityHistory.data.Response.activities[0].values);
+
 // TODO: scheduled function to clean up state strings (every day)

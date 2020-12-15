@@ -30,6 +30,17 @@
         "4": "Complete",
         "5": "Expired"
     },
+    "ACTIVITY_MODES": {
+        "ALL_PVP": 5,
+        "PRIVATE_MATCHES_ALL": 32,
+        "PRIVATE_MATCHES_CLASH": 51,
+        "PRIVATE_MATCHES_CONTROL": 52,
+        "PRIVATE_MATCHES_SUPREMACY": 53,
+        "PRIVATE_MATCHES_COUNTDOWN": 54,
+        "PRIVATE_MATCHES_SURVIVAL": 55,
+        "PRIVATE_MATCHES_MAYHEM": 56,
+        "PRIVATE_MATCHES_RUMBLE": 57
+    },
     "IMG_URL_ROOT": "https://www.bungie.net",
     "AUTHORIZE_URL": "https://www.bungie.net/en/OAuth/Authorize?client_id=%s&response_type=code&state="
 }

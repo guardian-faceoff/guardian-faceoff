@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HashRouter } from 'react-router-dom';
 import { createMuiTheme, ThemeProvider, makeStyles } from '@material-ui/core/styles';
-import { Container, Box } from '@material-ui/core';
+import { Box } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { grey, teal } from '@material-ui/core/colors';
 import Navigation from './components/Navigation';
@@ -28,7 +28,6 @@ const useStyles = makeStyles((theme) => {
 
 const App = () => {
     const classes = useStyles();
-    const [darkMode, setDarkMode] = useState(localStorage.darkMode === 'true');
 
     const theme = React.useMemo(() => {
         return createMuiTheme({
@@ -47,24 +46,22 @@ const App = () => {
     }, []);
 
     return (
-        <AppContextWrapper darkMode={darkMode} setDarkMode={setDarkMode}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <HashRouter>
+        <HashRouter>
+            <AppContextWrapper>
+                <ThemeProvider theme={theme}>
+                    <CssBaseline />
                     <Box className={classes.box}>
                         <Box className={classes.navigation}>
                             <Navigation />
                         </Box>
                         <Box className={classes.container}>
-                            <Container>
-                                <Routes />
-                                <SnackBarManager />
-                            </Container>
+                            <Routes />
+                            <SnackBarManager />
                         </Box>
                     </Box>
-                </HashRouter>
-            </ThemeProvider>
-        </AppContextWrapper>
+                </ThemeProvider>
+            </AppContextWrapper>
+        </HashRouter>
     );
 };
 

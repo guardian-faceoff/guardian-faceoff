@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Badge, Button } from '@material-ui/core';
+import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Badge, Button, Box } from '@material-ui/core';
 import { fade, makeStyles } from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
 // import SearchIcon from '@material-ui/icons/Search';
@@ -8,7 +8,7 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 // import MoreIcon from '@material-ui/icons/MoreVert';
 import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
-import { logout } from '../FirebaseHelper';
+import { getCurrentUser } from '../FirebaseHelper';
 import { AppContext } from '../AppContext';
 
 const useStyles = makeStyles((theme) => ({
@@ -21,6 +21,7 @@ const useStyles = makeStyles((theme) => ({
     title: {
         fontWeight: 'bold',
         display: 'block',
+        cursor: 'pointer',
     },
     search: {
         position: 'relative',
@@ -79,27 +80,16 @@ const useStyles = makeStyles((theme) => ({
 const Navigation = ({ history }) => {
     const classes = useStyles();
     const [anchorEl, setAnchorEl] = React.useState(null);
-    const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
-    const { appState, login } = useContext(AppContext);
+    const { login, logout, appState } = useContext(AppContext);
 
     const isMenuOpen = Boolean(anchorEl);
-    const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleMobileMenuClose = () => {
-        setMobileMoreAnchorEl(null);
-    };
-
     const handleMenuClose = () => {
         setAnchorEl(null);
-        handleMobileMenuClose();
-    };
-
-    const handleMobileMenuOpen = (event) => {
-        setMobileMoreAnchorEl(event.currentTarget);
     };
 
     const logUserOut = async () => {
@@ -127,7 +117,7 @@ const Navigation = ({ history }) => {
             >
                 Home
             </MenuItem>
-            {!appState.currentUser && (
+            {!getCurrentUser() && (
                 <MenuItem
                     onClick={() => {
                         login();
@@ -137,7 +127,27 @@ const Navigation = ({ history }) => {
                     Login
                 </MenuItem>
             )}
-            {appState.currentUser && (
+            {getCurrentUser() && (
+                <MenuItem
+                    onClick={() => {
+                        history.push('/matches');
+                        handleMenuClose();
+                    }}
+                >
+                    Matches
+                </MenuItem>
+            )}
+            {getCurrentUser() && (
+                <MenuItem
+                    onClick={() => {
+                        history.push('/profile');
+                        handleMenuClose();
+                    }}
+                >
+                    Profile
+                </MenuItem>
+            )}
+            {getCurrentUser() && (
                 <MenuItem
                     onClick={() => {
                         logUserOut();
@@ -150,100 +160,56 @@ const Navigation = ({ history }) => {
         </Menu>
     );
 
-    const mobileMenuId = 'primary-search-account-menu-mobile';
-    const renderMobileMenu = (
-        <Menu
-            anchorEl={mobileMoreAnchorEl}
-            id={mobileMenuId}
-            keepMounted
-            open={isMobileMenuOpen}
-            onClose={handleMobileMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-            <MenuItem
-                onClick={() => {
-                    history.push('/');
-                    handleMenuClose();
-                }}
-            >
-                Home
-            </MenuItem>
-            {appState.currentUser && <MenuItem onClick={handleMenuClose}>My Account</MenuItem>}
-            {!appState.currentUser && (
-                <MenuItem
-                    onClick={() => {
-                        login();
-                        handleMenuClose();
-                    }}
-                >
-                    Login
-                </MenuItem>
-            )}
-            {appState.currentUser && (
-                <MenuItem
-                    onClick={() => {
-                        logUserOut();
-                        handleMenuClose();
-                    }}
-                >
-                    Log Out
-                </MenuItem>
-            )}
-        </Menu>
-    );
+    const getNavbarControls = () => {
+        if (!getCurrentUser()) {
+            if (!appState.loading) {
+                return (
+                    <Button
+                        onClick={() => {
+                            login();
+                        }}
+                        color="secondary"
+                        variant="contained"
+                        className={classes.navButton}
+                    >
+                        Login
+                    </Button>
+                );
+            }
+            return <Box />;
+        }
+        return (
+            <>
+                <IconButton aria-label="show 2 new notifications" color="inherit">
+                    <Badge badgeContent={2} color="error">
+                        <NotificationsIcon />
+                    </Badge>
+                </IconButton>
+                <IconButton edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit">
+                    <MenuIcon />
+                </IconButton>
+            </>
+        );
+    };
 
     return (
         <div className={classes.grow}>
             <AppBar position="static">
                 <Toolbar>
-                    <Typography className={classes.title} variant="h6" noWrap>
+                    <Typography
+                        className={classes.title}
+                        variant="h6"
+                        noWrap
+                        onClick={() => {
+                            history.push('/');
+                        }}
+                    >
                         Guardian Faceoff
                     </Typography>
                     <div className={classes.grow} />
-                    <div className={classes.sectionDesktop}>
-                        {!appState.currentUser && (
-                            <Button
-                                onClick={() => {
-                                    login();
-                                }}
-                                color="secondary"
-                                variant="contained"
-                                className={classes.navButton}
-                            >
-                                Login
-                            </Button>
-                        )}
-                        {appState.currentUser && (
-                            <IconButton aria-label="show 2 new notifications" color="inherit">
-                                <Badge badgeContent={2} color="error">
-                                    <NotificationsIcon />
-                                </Badge>
-                            </IconButton>
-                        )}
-                        {appState.currentUser && (
-                            <IconButton edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit">
-                                <MenuIcon />
-                            </IconButton>
-                        )}
-                    </div>
-                    <div className={classes.sectionMobile}>
-                        {appState.currentUser && (
-                            <IconButton aria-label="show 2 new notifications" color="inherit">
-                                <Badge badgeContent={2} color="error">
-                                    <NotificationsIcon />
-                                </Badge>
-                            </IconButton>
-                        )}
-                        {appState.currentUser && (
-                            <IconButton aria-label="show more" aria-controls={mobileMenuId} aria-haspopup="true" onClick={handleMobileMenuOpen} color="inherit">
-                                <MenuIcon />
-                            </IconButton>
-                        )}
-                    </div>
+                    {getNavbarControls()}
                 </Toolbar>
             </AppBar>
-            {renderMobileMenu}
             {renderMenu}
         </div>
     );

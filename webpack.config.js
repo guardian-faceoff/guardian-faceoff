@@ -1,23 +1,11 @@
 /* eslint-disable no-console */
 /* eslint-disable global-require */
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebPackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production';
     const APP_DIR = path.resolve('./src');
-    let bungieJson;
-    if (isProd) {
-        bungieJson = require('./bungie.json');
-    } else {
-        try {
-            bungieJson = require('./bungie-dev.json');
-        } catch (e) {
-            console.error('Error Loading bungie-dev.json. Does this file exist?');
-            process.exit(1337);
-        }
-    }
 
     return {
         mode: isProd ? 'production' : 'development',
@@ -60,26 +48,17 @@ module.exports = (env, argv) => {
             ],
         },
         devtool: 'source-map',
-        // devServer: {
-        //     contentBase: path.join(__dirname, '.'),
-        //     compress: true,
-        //     port: 1337,
-        //     https: true,
-        // },
         plugins: [
             new HtmlWebPackPlugin({
                 filename: 'index.html',
                 template: 'src/index.html',
                 scriptLoading: 'defer',
                 globalConstants: {
-                    BUNGIE_APP_ID: bungieJson.BUNGIE_APP_ID,
-                    BUNGIE_API_KEY: bungieJson.BUNGIE_API_KEY,
+                    BUNGIE_APP_ID: '34894',
+                    BUNGIE_API_KEY: 'a4bb5c8feec940eeb7d8167fda39e31b',
                     VERSION: '0.0.1',
                     PRODUCTION: isProd,
                 },
-            }),
-            new webpack.DefinePlugin({
-                ...bungieJson,
             }),
         ],
     };

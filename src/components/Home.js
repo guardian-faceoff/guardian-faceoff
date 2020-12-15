@@ -1,8 +1,9 @@
 import React, { useContext } from 'react';
-import { Button, Grid, Paper } from '@material-ui/core';
+import { Button, Grid, Paper, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router';
 import { AppContext } from '../AppContext';
+import { getCurrentUser } from '../FirebaseHelper';
 
 const useStyles = makeStyles((theme) => {
     return {
@@ -30,21 +31,22 @@ const useStyles = makeStyles((theme) => {
 
 const Home = () => {
     const classes = useStyles();
-    // const [email, setEmail] = useState('');
-    // const [password, setPassword] = useState('');
     const { login } = useContext(AppContext);
 
     return (
         <Grid container spacing={0} align="center" direction="column" className={classes.grid}>
             <Grid item>
                 <Paper className={classes.paper}>
-                    {/* <Box align="left" justify="left">
-                        <TextField className={classes.input} label="Email" value={email} onChange={(e) => setEmail(e.target.value.trim())} />
-                        <TextField className={classes.input} label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value.trim())} />
-                    </Box> */}
-                    <Button className={classes.button} size="large" color="secondary" variant="contained" onClick={() => login()}>
-                        Login
-                    </Button>
+                    {!getCurrentUser() && (
+                        <Button className={classes.button} size="large" color="secondary" variant="contained" onClick={() => login()}>
+                            Login
+                        </Button>
+                    )}
+                    {getCurrentUser() && (
+                        <Box>
+                            <Box>{`Welcome back ${getCurrentUser().displayName}!`}</Box>
+                        </Box>
+                    )}
                 </Paper>
             </Grid>
         </Grid>

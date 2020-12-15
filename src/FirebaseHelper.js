@@ -23,60 +23,25 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 const functions = firebase.functions();
 const auth = firebase.auth();
-if (window.location.hostname.indexOf('ngrok.io') > -1 || window.location.hostname.indexOf('localhost') > -1) {
-    // eslint-disable-next-line no-console
+if (window.location.hostname.indexOf('localhost') > -1) {
     console.warn('Using local firebase emulators...');
     db.useEmulator('localhost', 8080);
     functions.useEmulator('localhost', 5001);
     auth.useEmulator('http://localhost:9099/');
 }
 
-const createOrUpdateUserDoc = async (username) => {
-    if (firebase.auth().currentUser) {
-        return db.runTransaction(async (transaction) => {
-            const ref = db.collection('users').doc(firebase.auth().currentUser.uid);
-            const doc = await transaction.get(ref);
-            if (!doc.data()) {
-                const updateObj = {
-                    lastLogin: Date.now(),
-                };
-                if (username) {
-                    updateObj.username = username;
-                }
-                await transaction.set(ref, updateObj);
-            }
-        });
-    }
-    return Promise.resolve();
-};
-createOrUpdateUserDoc();
-
-export const loginWithEmail = async (email, password) => {
-    await firebase.auth().signInWithEmailAndPassword(email, password);
-    await createOrUpdateUserDoc();
+const snapshotToArray = (snapshot) => {
+    const returnArr = [];
+    snapshot.forEach((childSnapshot) => {
+        const item = childSnapshot.data();
+        item.id = childSnapshot.id;
+        returnArr.push(item);
+    });
+    return returnArr;
 };
 
-export const registerWithEmail = async (email, password) => {
-    await firebase.auth().createUserWithEmailAndPassword(email, password);
-    await createOrUpdateUserDoc();
-};
-
-export const logout = () => firebase.auth().signOut();
-
-export const passwordReset = (email) => firebase.auth().sendPasswordResetEmail(email);
-
-export const getCurrentUser = () => firebase.auth().currentUser;
-
-export const getUser = async () => {
-    return await db.collection('users').doc(firebase.auth().currentUser.uid).get();
-};
-
-// ////////
-
-export const getFirebaseCustomToken = async (d2AuthToken) => {
-    const getCustomToken = functions.httpsCallable('getFirebaseCustomToken');
-    const result = await getCustomToken({ d2AuthToken });
-    return result;
+export const onAuthStateChanged = (callback) => {
+    firebase.auth().onAuthStateChanged(callback);
 };
 
 export const loginWithCustomToken = async (customToken) => {
@@ -89,8 +54,50 @@ export const loginWithCustomToken = async (customToken) => {
     return res;
 };
 
+export const logoutOfFirebase = () => firebase.auth().signOut();
+
+export const getCurrentUser = () => firebase.auth().currentUser;
+
+export const getCurrentUserData = async () => {
+    return await db.collection('userData').doc(firebase.auth().currentUser.uid).get();
+};
+
+export const createMatch = async () => {
+    const createMatchFunc = functions.httpsCallable('createMatch');
+    const result = await createMatchFunc();
+    return result;
+};
+export const joinMatch = async (matchId) => {
+    const joinMatchFunc = functions.httpsCallable('joinMatch');
+    const result = await joinMatchFunc(matchId);
+    return result;
+};
+
+export const cancelMatch = async (matchId) => {
+    const cancelMatchFunc = functions.httpsCallable('cancelMatch');
+    const result = await cancelMatchFunc(matchId);
+    return result;
+};
+
+export const getMatches = async (stateFilter) => {
+    const matchesRef = db.collection('matches');
+    let snapshot;
+    if (stateFilter) {
+        snapshot = await matchesRef.where('state', '==', stateFilter).get();
+    } else {
+        snapshot = await matchesRef.get();
+    }
+    return snapshotToArray(snapshot);
+};
+
 export const getBungieAuthUrl = async () => {
     const getAuthUrl = functions.httpsCallable('getBungieAuthUrl');
     const result = await getAuthUrl();
+    return result;
+};
+
+export const refreshLogin = async () => {
+    const refresh = functions.httpsCallable('refreshLogin');
+    const result = await refresh();
     return result;
 };

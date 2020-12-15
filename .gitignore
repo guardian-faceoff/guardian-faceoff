@@ -78,3 +78,5 @@ ui-debug.log
 .yarn-integrity
 
 bungie-dev.json
+
+.runtimeconfig.json

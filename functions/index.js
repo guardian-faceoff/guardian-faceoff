@@ -11,8 +11,8 @@ if (process.env.NODE_ENV === 'development') {
     APP_URL = 'http://localhost:5000';
     REDIRECT_URL = 'http://localhost:5001/guardian-faceoff/us-central1/bungieRedirectUrl';
 } else {
-    APP_URL = 'https://guardian-faceoff.firebaseapp.com/';
-    REDIRECT_URL = `${APP_URL}guardian-faceoff/us-central1/bungieRedirectUrl`;
+    APP_URL = 'https://guardian-faceoff.web.app/';
+    REDIRECT_URL = 'https://us-central1-guardian-faceoff.cloudfunctions.net/bungieRedirectUrl';
 }
 
 const firebaseApp = firebaseAdmin.initializeApp();

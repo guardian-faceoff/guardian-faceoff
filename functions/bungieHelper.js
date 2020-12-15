@@ -40,7 +40,6 @@ const getTokenFromBungie = async (code) => {
 // };
 
 const getMembershipInfo = async (membershipId, membershipType) => {
-    console.log(functions.config().bungie.api_key);
     return await axios.get(`https://www.bungie.net/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`, {
         headers: {
             'X-API-Key': functions.config().bungie.api_key,

@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
             main: path.resolve(APP_DIR, 'index.js'),
         },
         output: {
-            path: path.resolve(__dirname, isProd ? './public' : './dist'),
+            path: path.resolve(__dirname, './dist'),
             filename: isProd ? '[name].[contenthash].js' : '[name].js',
         },
         module: {

@@ -1,12 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /userAuthData/{uid}/{documents=**} {
-      allow read, write: if false
-      allow create: if false
-      allow update: if false
-      allow delete: if false
-    }
     match /userData/{uid}/{documents=**} {
       allow read: if request.auth != null && request.auth.uid == uid
       allow write: if false
@@ -15,7 +9,8 @@ service cloud.firestore {
       allow delete: if false
     }
     match /matches/{uid}/{documents=**} {
-      allow read: if true
+      allow read: if request.auth != null || request.query.limit <= 10
+      allow write: if false
       allow create: if false
       allow update: if false
       allow delete: if false

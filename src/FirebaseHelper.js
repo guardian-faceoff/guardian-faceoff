@@ -19,7 +19,6 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-
 const db = firebase.firestore();
 const functions = firebase.functions();
 const auth = firebase.auth();

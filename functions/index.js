@@ -18,7 +18,7 @@ if (EMULATOR_MODE) {
 } else {
     console.log('Running in production mode!');
     APP_ID = functions.config().bungie.prod.app_id;
-    APP_URL = 'https://guardian-faceoff.web.app/';
+    APP_URL = 'https://guardian-faceoff.web.app';
     REDIRECT_URL = 'https://us-central1-guardian-faceoff.cloudfunctions.net/bungieRedirectUrl';
 }
 

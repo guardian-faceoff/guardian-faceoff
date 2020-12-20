@@ -87,11 +87,7 @@ exports.bungieRedirectUrl = functions.https.onRequest(async (req, res) => {
 
         await updateUserInfo(bungieId, true);
 
-        console.log('========================================================================');
-        console.log('login_token', firebaseToken);
         const builtRedirectUrl = `${APP_URL}?code=${code}&state=${encodedState}&login_token=${encodeURIComponent(firebaseToken)}`;
-        console.log('builtRedirectUrl', builtRedirectUrl);
-        console.log('========================================================================');
         return res.redirect(builtRedirectUrl);
     } catch (e) {
         console.log(e);

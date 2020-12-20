@@ -12,8 +12,6 @@ export const useAppContext = () => useContext(AppContext);
 
 const urlParams = new URLSearchParams(window.location.search);
 let loginToken = urlParams.get('login_token') && decodeURIComponent(urlParams.get('login_token'));
-console.log('window.location.search', window.location.search);
-console.log('loginToken', loginToken);
 const error = urlParams.get('error') && decodeURIComponent(urlParams.get('error'));
 
 if (window.location.search !== '') {

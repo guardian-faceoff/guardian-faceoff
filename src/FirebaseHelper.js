@@ -2,6 +2,7 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
+import { MATCH_STATE } from './Constants.json';
 
 // Configure Firebase.
 const firebaseConfig = {
@@ -86,6 +87,12 @@ export const getMatches = async (stateFilter) => {
     } else {
         snapshot = await matchesRef.get();
     }
+    return snapshotToArray(snapshot);
+};
+
+export const getCompletedMatches = async () => {
+    const matchesRef = db.collection('completedMatches');
+    const snapshot = await matchesRef.where('state', 'in', [MATCH_STATE.COMPLETE, MATCH_STATE.EXPIRED, MATCH_STATE.PLAYER_QUIT]).get();
     return snapshotToArray(snapshot);
 };
 

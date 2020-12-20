@@ -140,6 +140,16 @@ const Navigation = ({ history }) => {
             {getCurrentUser() && (
                 <MenuItem
                     onClick={() => {
+                        history.push('/completedMatches');
+                        handleMenuClose();
+                    }}
+                >
+                    Completed Matches
+                </MenuItem>
+            )}
+            {getCurrentUser() && (
+                <MenuItem
+                    onClick={() => {
                         history.push('/profile');
                         handleMenuClose();
                     }}

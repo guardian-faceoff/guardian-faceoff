@@ -2,7 +2,6 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
-import { MATCH_STATE } from './Constants.json';
 
 // Configure Firebase.
 const firebaseConfig = {
@@ -79,11 +78,18 @@ export const cancelMatch = async (matchId) => {
     return result;
 };
 
+export const getCurrentMatch = async () => {
+    const { uid } = firebase.auth().currentUser;
+    const matchesRef = db.collection('matches');
+    const currentMatchSnapshot = await matchesRef.where(`players.${uid}`, 'not-in', ['']).limit(1).get();
+    return snapshotToArray(currentMatchSnapshot)[0];
+};
+
 export const getMatches = async (stateFilter) => {
     const matchesRef = db.collection('matches');
     let snapshot;
     if (stateFilter) {
-        snapshot = await matchesRef.where('state', '==', stateFilter).get();
+        snapshot = await matchesRef.where('state', '==', stateFilter).orderBy('created').limit(100).get();
     } else {
         snapshot = await matchesRef.get();
     }
@@ -91,8 +97,9 @@ export const getMatches = async (stateFilter) => {
 };
 
 export const getCompletedMatches = async () => {
+    const { uid } = firebase.auth().currentUser;
     const matchesRef = db.collection('completedMatches');
-    const snapshot = await matchesRef.where('state', 'in', [MATCH_STATE.COMPLETE, MATCH_STATE.EXPIRED, MATCH_STATE.PLAYER_QUIT]).get();
+    const snapshot = await matchesRef.where(`players.${uid}`, 'not-in', ['']).orderBy(`players.${uid}`).orderBy('matchTime', 'desc').limit(100).get();
     return snapshotToArray(snapshot);
 };
 

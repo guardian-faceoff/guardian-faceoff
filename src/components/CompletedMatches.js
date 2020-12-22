@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Grid, Paper, Box, Typography, CircularProgress, Divider } from '@material-ui/core';
+import { Grid, Paper, Box, Typography, CircularProgress, TableContainer, Table, TableCell, TableRow, TableBody, TableHead } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router';
 // import axios from 'axios';
@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => {
             height: '100vh',
         },
         paper: {
-            width: '37em',
+            width: '45em',
             padding: theme.spacing(4),
             margin: theme.spacing(2),
             textAlign: 'left',
@@ -46,6 +46,11 @@ const useStyles = makeStyles((theme) => {
         },
         matchButtonContainer: {
             textAlign: 'left',
+        },
+        table: {
+            marginTop: theme.spacing(),
+            background: theme.palette.primary.dark,
+            color: theme.palette.primary.contrastText,
         },
     };
 });
@@ -81,15 +86,38 @@ const CompletedMatches = ({ history }) => {
         return completedMatchesState.map((match) => {
             return (
                 <Paper className={classes.paper} key={uuid()}>
-                    <Typography variant="h5">{`${match.ownerDisplayName}'s Match`}</Typography>
+                    <Typography variant="h5">{`${match.players[match.owner]}'s Match`}</Typography>
                     <Typography>{`${Constants.MATCH_STATE[match.state]}`}</Typography>
-                    <Divider className={classes.divider} />
-                    <Box>{`Players: ${Object.keys(match.players).length}/${match.maxPlayers}`}</Box>
-                    <Box>{`Expires: ${new Date(match.expires).toLocaleTimeString()} on ${new Date(match.expires).toLocaleDateString()} `}</Box>
+                    <Box>{`on ${new Date(match.expires).toLocaleDateString()} at ${new Date(match.expires).toLocaleTimeString()}`}</Box>
                     <Box>
-                        {`Players Joined: ${Object.keys(match.players)
-                            .map((playerId) => match.players[playerId])
-                            .join(', ')}`}
+                        <TableContainer component={Paper}>
+                            <Table className={classes.table} size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Player</TableCell>
+                                        <TableCell align="center">Score</TableCell>
+                                        <TableCell align="center">Kills</TableCell>
+                                        <TableCell align="center">Deaths</TableCell>
+                                        <TableCell align="center">Assists</TableCell>
+                                        <TableCell align="center">Completed</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {match.stats.map((row) => (
+                                        <TableRow key={row.playerId}>
+                                            <TableCell component="th" scope="row">
+                                                {match.players[row.playerId]}
+                                            </TableCell>
+                                            <TableCell align="center">{row.score ? row.score : '-'}</TableCell>
+                                            <TableCell align="center">{row.kills ? row.kills : '-'}</TableCell>
+                                            <TableCell align="center">{row.deaths ? row.deaths : '-'}</TableCell>
+                                            <TableCell align="center">{row.assists ? row.assists : '-'}</TableCell>
+                                            {row.completed !== undefined ? <TableCell align="center">{row.completed === true ? 'Yes' : 'No'}</TableCell> : <TableCell align="center">-</TableCell>}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </Box>
                 </Paper>
             );

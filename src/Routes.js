@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Route, Redirect, Switch } from 'react-router-dom';
-import { Typography, LinearProgress, Container } from '@material-ui/core';
+import { LinearProgress, Container } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import Home from './components/Home';
 import Profile from './components/Profile';
@@ -26,11 +26,6 @@ const App = () => {
         return (
             <>
                 <LinearProgress className={classes.progressBar} color="secondary" />
-                <Container>
-                    <Typography className={classes.loading} variant="h4">
-                        Loading...
-                    </Typography>
-                </Container>
             </>
         );
     }

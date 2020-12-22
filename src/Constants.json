@@ -1,6 +1,7 @@
 {
     "TOKEN_URL": "https://www.bungie.net/Platform/App/OAuth/token/",
-    "MATCH_EXPIRE_TIME": 900000,
+    "MATCH_EXPIRE_TIME": 600000,
+    "MATCH_PLAY_EXPIRE_TIME": 900000,
     "LOCALE": {},
     "MEMBERSHIP_TYPES": {
         "1": "Xbox",
@@ -26,7 +27,7 @@
         "PLAYER_QUIT": 5,
         "1": "Waiting for Players",
         "2": "In Progress",
-        "3": "Complete",
+        "3": "Completed",
         "4": "Expired",
         "5": "Player Quit/Disconnected"
     },

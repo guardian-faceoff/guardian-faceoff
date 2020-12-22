@@ -6,7 +6,7 @@ import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
 import uuid from 'uuid';
 import { AppContext } from '../AppContext';
-import { getCurrentUser, getMatches, createMatch, joinMatch, cancelMatch } from '../FirebaseHelper';
+import { getCurrentMatch, getCurrentUser, getMatches, createMatch, joinMatch, cancelMatch } from '../FirebaseHelper';
 import Constants from '../Constants.json';
 
 const useStyles = makeStyles((theme) => {
@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => {
             height: '100vh',
         },
         paper: {
-            width: '37em',
+            width: 'em',
             padding: theme.spacing(4),
             margin: theme.spacing(2),
             textAlign: 'left',
@@ -47,6 +47,9 @@ const useStyles = makeStyles((theme) => {
         matchButtonContainer: {
             textAlign: 'left',
         },
+        sectionText: {
+            marginTop: theme.spacing(4),
+        },
     };
 });
 
@@ -54,13 +57,16 @@ const Matches = ({ history }) => {
     const classes = useStyles();
     const { showError } = useContext(AppContext);
     const [matchesState, setMatchesState] = useState([]);
+    const [currentMatchState, setCurrentMatchState] = useState();
     const [loading, setLoading] = useState(true);
 
     const getListOfMatches = async () => {
         setLoading(true);
         try {
+            const currentMatch = await getCurrentMatch();
             const matches = await getMatches();
-            setMatchesState(matches);
+            setCurrentMatchState(currentMatch);
+            setMatchesState(matches.filter((match) => match.owner !== currentMatch.owner));
         } catch (e) {
             console.error(e);
             showError('Error getting list of matches.');
@@ -78,66 +84,73 @@ const Matches = ({ history }) => {
     }, []);
 
     const getMatchesJsx = () => {
-        return matchesState.map((match) => {
-            return (
-                <Paper className={classes.paper} key={uuid()}>
-                    <Typography variant="h5">{`${match.ownerDisplayName}'s Match`}</Typography>
-                    <Typography>{`${Constants.MATCH_STATE[match.state]}`}</Typography>
-                    <Divider className={classes.divider} />
-                    <Box>{`Players: ${Object.keys(match.players).length}/${match.maxPlayers}`}</Box>
-                    <Box>{`Expires: ${new Date(match.expires).toLocaleTimeString()} on ${new Date(match.expires).toLocaleDateString()} `}</Box>
-                    <Box>
-                        {`Players Joined: ${Object.keys(match.players)
-                            .map((playerId) => match.players[playerId])
-                            .join(', ')}`}
-                    </Box>
-                    <Box className={classes.matchButtonContainer}>
-                        <Button
-                            className={classes.matchButton}
-                            color="secondary"
-                            variant="contained"
-                            onClick={async () => {
-                                try {
-                                    await joinMatch(match.id);
-                                    await getListOfMatches();
-                                } catch (e) {
-                                    if (e && e.details && e.details.message) {
-                                        showError(e.details.message);
-                                    } else if (e && e.message) {
-                                        showError(e.message);
-                                    } else {
-                                        showError('An error occured.');
+        if (matchesState.length > 0) {
+            return matchesState.map((match) => {
+                return (
+                    <Paper className={classes.paper} key={uuid()}>
+                        <Typography variant="h5">{`${match.players[match.owner]}'s Match`}</Typography>
+                        <Typography>{`${Constants.MATCH_STATE[match.state]}`}</Typography>
+                        <Divider className={classes.divider} />
+                        <Box>{`Players: ${Object.keys(match.players).length}/${match.maxPlayers}`}</Box>
+                        <Box>{`Expires: ${new Date(match.expires).toLocaleTimeString()} on ${new Date(match.expires).toLocaleDateString()} `}</Box>
+                        <Box>
+                            {`Players Joined: ${Object.keys(match.players)
+                                .map((playerId) => match.players[playerId])
+                                .join(', ')}`}
+                        </Box>
+                        <Box className={classes.matchButtonContainer}>
+                            <Button
+                                className={classes.matchButton}
+                                color="secondary"
+                                variant="contained"
+                                onClick={async () => {
+                                    try {
+                                        await joinMatch(match.id);
+                                        await getListOfMatches();
+                                    } catch (e) {
+                                        if (e && e.details && e.details.message) {
+                                            showError(e.details.message);
+                                        } else if (e && e.message) {
+                                            showError(e.message);
+                                        } else {
+                                            showError('An error occured.');
+                                        }
                                     }
-                                }
-                            }}
-                        >
-                            Join
-                        </Button>
-                        <Button
-                            className={classes.matchButton}
-                            color="secondary"
-                            variant="contained"
-                            onClick={async () => {
-                                try {
-                                    await cancelMatch(match.id);
-                                    await getListOfMatches();
-                                } catch (e) {
-                                    if (e && e.details && e.details.message) {
-                                        showError(e.details.message);
-                                    } else if (e && e.message) {
-                                        showError(e.message);
-                                    } else {
-                                        showError('An error occured.');
+                                }}
+                            >
+                                Join
+                            </Button>
+                            <Button
+                                className={classes.matchButton}
+                                color="secondary"
+                                variant="contained"
+                                onClick={async () => {
+                                    try {
+                                        await cancelMatch(match.id);
+                                        await getListOfMatches();
+                                    } catch (e) {
+                                        if (e && e.details && e.details.message) {
+                                            showError(e.details.message);
+                                        } else if (e && e.message) {
+                                            showError(e.message);
+                                        } else {
+                                            showError('An error occured.');
+                                        }
                                     }
-                                }
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                    </Box>
-                </Paper>
-            );
-        });
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                        </Box>
+                    </Paper>
+                );
+            });
+        }
+        return (
+            <Box className={classes.sectionText}>
+                <Typography>No matches to join. Create one!</Typography>
+            </Box>
+        );
     };
 
     return (
@@ -171,6 +184,68 @@ const Matches = ({ history }) => {
                             </Button>
                         </Box>
                     )}
+                    {currentMatchState && (
+                        <>
+                            <Typography className={classes.sectionText}>Your Current Match</Typography>
+                            <Paper className={classes.paper} key={uuid()}>
+                                <Typography variant="h5">{`${currentMatchState.players[currentMatchState.owner]}'s Match`}</Typography>
+                                <Typography>{`${Constants.MATCH_STATE[currentMatchState.state]}`}</Typography>
+                                <Divider className={classes.divider} />
+                                <Box>{`Players: ${Object.keys(currentMatchState.players).length}/${currentMatchState.maxPlayers}`}</Box>
+                                <Box>{`Expires: ${new Date(currentMatchState.expires).toLocaleTimeString()} on ${new Date(currentMatchState.expires).toLocaleDateString()} `}</Box>
+                                <Box>
+                                    {`Players Joined: ${Object.keys(currentMatchState.players)
+                                        .map((playerId) => currentMatchState.players[playerId])
+                                        .join(', ')}`}
+                                </Box>
+                                <Box className={classes.matchButtonContainer}>
+                                    <Button
+                                        className={classes.matchButton}
+                                        color="secondary"
+                                        variant="contained"
+                                        onClick={async () => {
+                                            try {
+                                                await joinMatch(currentMatchState.id);
+                                                await getListOfMatches();
+                                            } catch (e) {
+                                                if (e && e.details && e.details.message) {
+                                                    showError(e.details.message);
+                                                } else if (e && e.message) {
+                                                    showError(e.message);
+                                                } else {
+                                                    showError('An error occured.');
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        Join
+                                    </Button>
+                                    <Button
+                                        className={classes.matchButton}
+                                        color="secondary"
+                                        variant="contained"
+                                        onClick={async () => {
+                                            try {
+                                                await cancelMatch(currentMatchState.id);
+                                                await getListOfMatches();
+                                            } catch (e) {
+                                                if (e && e.details && e.details.message) {
+                                                    showError(e.details.message);
+                                                } else if (e && e.message) {
+                                                    showError(e.message);
+                                                } else {
+                                                    showError('An error occured.');
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </Box>
+                            </Paper>
+                        </>
+                    )}
+                    <Typography className={classes.sectionText}>Available Matches</Typography>
                     {!loading && getCurrentUser() && matchesState && <Box>{getMatchesJsx()}</Box>}
                     {loading && <CircularProgress color="secondary" />}
                 </Box>

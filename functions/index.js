@@ -2,8 +2,9 @@ const functions = require('firebase-functions');
 const firebaseAdmin = require('firebase-admin');
 const util = require('util');
 const uuid = require('react-uuid');
-const { getTokenFromBungie, getMembershipInfo, getProfile, getActivityHistory } = require('./bungieHelper');
-const { MATCH_STATE, MATCH_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL, MEMBERSHIP_TYPES } = require('../src/Constants.json');
+const { getTokenFromBungie, getMembershipInfo, getProfile } = require('./bungieHelper');
+const { MATCH_STATE, MATCH_EXPIRE_TIME, MATCH_PLAY_EXPIRE_TIME, IMG_URL_ROOT, AUTHORIZE_URL, MEMBERSHIP_TYPES } = require('../src/Constants.json');
+const { processMatches } = require('./processMatches');
 
 const EMULATOR_MODE = process.env.FUNCTIONS_EMULATOR === 'true';
 
@@ -90,7 +91,7 @@ exports.bungieRedirectUrl = functions.https.onRequest(async (req, res) => {
         const builtRedirectUrl = `${APP_URL}?code=${code}&state=${encodedState}&login_token=${encodeURIComponent(firebaseToken)}`;
         return res.redirect(builtRedirectUrl);
     } catch (e) {
-        console.log(e);
+        console.error(e);
         return res.redirect(`${APP_URL}?error=${encodeURIComponent('Error processing user login.')}`);
     }
 });
@@ -135,10 +136,11 @@ exports.createMatch = functions.https.onCall(async (data, context) => {
             const players = {};
             players[context.auth.uid] = userDoc.data().membership.displayName;
             t.set(matchRef, {
-                ownerDisplayName: userDoc.data().membership.displayName,
+                owner: context.auth.uid,
                 state: MATCH_STATE.WAITING_FOR_PLAYERS,
                 maxPlayers: 2,
                 players,
+                created: Date.now(),
                 expires: Date.now() + MATCH_EXPIRE_TIME,
             });
         });
@@ -188,6 +190,7 @@ exports.joinMatch = functions.https.onCall(async (matchId, context) => {
             t.set(
                 matchRef,
                 {
+                    expires: Date.now() + MATCH_PLAY_EXPIRE_TIME,
                     state: newState,
                     maxPlayers: matchDoc.data().maxPlayers,
                     players,
@@ -244,212 +247,17 @@ exports.cancelMatch = functions.https.onCall(async (matchId, context) => {
     }
 });
 
-// TODO: scheduled function to get scores and update each match, and clean up expired matches (every 3 mins)
-
-// const activityHistory = await getActivityHistory(primaryMembership.membershipType, primaryMembershipId, currentCharacter.characterId);
-//     console.log(activityHistory.data.Response.activities[0].activityDetails, activityHistory.data.Response.activities[0].values);
-
-const processMatches = async () => {
-    console.log('Processing matches!');
-    try {
-        const matchProcessorDoc = db.collection('matchProcessor').doc('data');
-        matchProcessorDoc.set({
-            lastRun: Date.now(),
-        });
-
-        const matchesRef = db.collection('matches');
-        const matchesSnapshot = await matchesRef.where('state', '==', MATCH_STATE.IN_PROGRESS).get();
-        matchesSnapshot.forEach(async (matchDoc) => {
-            const startTime = Date.now();
-            const matchData = matchDoc.data();
-            const playersSnapshot = await db.collection('userData').where('match', '==', matchDoc.id).get();
-            const playerActivityHistory = {};
-            const playerActivityHistoryPromises = [];
-            playersSnapshot.forEach(async (playerDoc) => {
-                const playerData = playerDoc.data();
-                const promise = getActivityHistory(playerData.membership.membershipType, playerData.membership.membershipId, playerData.currentCharacter.characterId);
-                playerActivityHistoryPromises.push(promise);
-                promise.then((activityHistory) => {
-                    playerActivityHistory[playerDoc.id] = activityHistory.data.Response.activities;
-                });
-            });
-            await Promise.all(playerActivityHistoryPromises);
-            const playerActivityHistoryArray = Object.keys(playerActivityHistory).map((bungieId) => playerActivityHistory[bungieId]);
-            const firstPlayerActivities = playerActivityHistoryArray[0];
-            let commonActivityId;
-            if (matchData.commonActivityId) {
-                commonActivityId = matchData.commonActivityId;
-            } else {
-                firstPlayerActivities.forEach((activity) => {
-                    if (!commonActivityId) {
-                        const activityId = activity.activityDetails.instanceId;
-                        const otherPlayersWithSameActivity = playerActivityHistoryArray.filter((otherPlayerActivityHistory) => {
-                            return (
-                                otherPlayerActivityHistory.filter((otherPlayerActivity) => {
-                                    return activityId === otherPlayerActivity.activityDetails.instanceId;
-                                }).length > 0
-                            );
-                        }).length;
-                        if (otherPlayersWithSameActivity === matchData.maxPlayers) {
-                            commonActivityId = activityId;
-                        }
-                    }
-                });
-            }
-            if (commonActivityId) {
-                const matchesAlreadyTrackedSnapshot = await db.collection('completedMatches').where('commonActivityId', '==', commonActivityId).limit(1).get();
-                if (matchesAlreadyTrackedSnapshot.size > 0) {
-                    // already tracked this match
-                    console.log('Already tracked this match. Waiting for another...');
-                } else {
-                    await db.runTransaction(async (t) => {
-                        await t.update(db.collection('matches').doc(matchDoc.id), {
-                            commonActivityId,
-                        });
-                        // check if activity is done
-                        const playersCompleted = [];
-                        const playersNotCompleted = [];
-                        const playersCommonActivityMap = {};
-                        Object.keys(playerActivityHistory).forEach((playerId) => {
-                            const playerActivities = playerActivityHistory[playerId];
-                            [playersCommonActivityMap[playerId]] = playerActivities.filter((activity) => {
-                                return commonActivityId === activity.activityDetails.instanceId;
-                            });
-                            if (playersCommonActivityMap[playerId].values.completed.basic.value === 1) {
-                                playersCompleted.push(playerId);
-                            } else {
-                                playersNotCompleted.push(playerId);
-                            }
-                        });
-                        if (playersCompleted.length > 0) {
-                            // TODO: check time played seconds maybe?
-                            const sortedPlayersByKillsAndCompleted = Object.keys(playersCommonActivityMap).sort((a, b) => {
-                                const playerACompleted = playersCommonActivityMap[a].values.completed.basic.value === 1;
-                                const playerBCompleted = playersCommonActivityMap[b].values.completed.basic.value === 1;
-                                if (playerACompleted && !playerBCompleted) {
-                                    return -1;
-                                }
-                                if (!playerACompleted && playerBCompleted) {
-                                    return 1;
-                                }
-                                const playerAKills = playersCommonActivityMap[a].values.kills.basic.value;
-                                const playerBKills = playersCommonActivityMap[b].values.kills.basic.value;
-                                return playerBKills - playerAKills;
-                            });
-                            const mostKills = playersCommonActivityMap[sortedPlayersByKillsAndCompleted[0]].values.kills.basic.value;
-                            const winners = sortedPlayersByKillsAndCompleted.filter((playerId) => {
-                                const playerHadMostKills = playersCommonActivityMap[playerId].values.kills.basic.value === mostKills;
-                                const playerCompletedMatch = playersCommonActivityMap[playerId].values.completed.basic.value === 1;
-                                return playerHadMostKills && playerCompletedMatch;
-                            });
-                            const losers = sortedPlayersByKillsAndCompleted.filter((playerId) => {
-                                const playerHadLessThanMostKills = playersCommonActivityMap[playerId].values.kills.basic.value < mostKills;
-                                const playerCompletedMatch = playersCommonActivityMap[playerId].values.completed.basic.value !== 1;
-                                return playerHadLessThanMostKills || playerCompletedMatch;
-                            });
-
-                            const promises = [];
-                            if (winners.length > 1) {
-                                winners.forEach(async (playerId) => {
-                                    promises.push(
-                                        t.set(
-                                            db.collection('userData').doc(playerId),
-                                            {
-                                                match: null,
-                                                stats: {
-                                                    wins: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                    losses: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                    ties: firebaseAdmin.firestore.FieldValue.increment(1),
-                                                    kills: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.kills.basic.value),
-                                                    deaths: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.deaths.basic.value),
-                                                    assists: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.assists.basic.value),
-                                                },
-                                            },
-                                            { merge: true }
-                                        )
-                                    );
-                                });
-                            } else {
-                                winners.forEach(async (playerId) => {
-                                    promises.push(
-                                        t.set(
-                                            db.collection('userData').doc(playerId),
-                                            {
-                                                match: null,
-                                                stats: {
-                                                    wins: firebaseAdmin.firestore.FieldValue.increment(1),
-                                                    losses: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                    ties: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                    kills: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.kills.basic.value),
-                                                    deaths: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.deaths.basic.value),
-                                                    assists: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.assists.basic.value),
-                                                },
-                                            },
-                                            { merge: true }
-                                        )
-                                    );
-                                });
-                            }
-                            losers.forEach(async (playerId) => {
-                                promises.push(
-                                    t.set(
-                                        db.collection('userData').doc(playerId),
-                                        {
-                                            match: null,
-                                            stats: {
-                                                wins: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                losses: firebaseAdmin.firestore.FieldValue.increment(1),
-                                                ties: firebaseAdmin.firestore.FieldValue.increment(0),
-                                                kills: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.kills.basic.value),
-                                                deaths: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.deaths.basic.value),
-                                                assists: firebaseAdmin.firestore.FieldValue.increment(playersCommonActivityMap[playerId].values.assists.basic.value),
-                                            },
-                                        },
-                                        { merge: true }
-                                    )
-                                );
-                            });
-                            promises.push(
-                                t.set(db.collection('completedMatches').doc(), {
-                                    ...matchDoc.data(),
-                                    state: playersNotCompleted.length > 0 ? MATCH_STATE.PLAYER_QUIT : MATCH_STATE.COMPLETE,
-                                    winners,
-                                    losers,
-                                    stats: sortedPlayersByKillsAndCompleted.map((playerId) => {
-                                        return {
-                                            playerId,
-                                            kills: playersCommonActivityMap[playerId].values.kills.basic.value,
-                                            deaths: playersCommonActivityMap[playerId].values.deaths.basic.value,
-                                            assists: playersCommonActivityMap[playerId].values.assists.basic.value,
-                                            completed: playersCommonActivityMap[playerId].values.completed.basic.value === 1,
-                                        };
-                                    }),
-                                })
-                            );
-                            await Promise.all(promises);
-                            await t.delete(db.collection('matches').doc(matchDoc.id));
-                        }
-                    });
-                }
-            }
-            console.log(`Time Elapsed Processing Match ${matchDoc.id}: ${Date.now() - startTime}ms`);
-        });
-    } catch (err) {
-        console.error(err);
-        throw new functions.https.HttpsError('aborted', 'Failed to cancel match.', err);
-    }
-    return null;
-};
-exports.processMatches = functions.pubsub.schedule('every 5 minutes').onRun(processMatches);
+exports.processMatches = functions.pubsub.schedule('every 5 minutes').onRun(() => {
+    processMatches(db);
+});
 if (EMULATOR_MODE) {
     setInterval(() => {
         console.warn('Running processMatches via setTimeout due to running in emulator mode.');
-        processMatches();
-    }, 10000);
+        processMatches(db);
+    }, 20000);
 }
 
 const deleteStateStrings = async () => {
-    console.log('Deleting all stateStrings!');
     try {
         await db.runTransaction(async (t) => {
             const stateStringsRef = db.collection('stateStrings');
@@ -471,7 +279,7 @@ if (EMULATOR_MODE) {
     setInterval(() => {
         console.warn('Running deleteStateStrings via setTimeout due to running in emulator mode.');
         deleteStateStrings();
-    }, 30000);
+    }, 60000);
 }
 
 // SEED DATA FOR FISH SO I CAN DEVELOP LOL
@@ -513,55 +321,16 @@ if (EMULATOR_MODE) {
 //             iconURL: 'https://www.bungie.net/img/theme/bungienet/icons/steamLogo.png',
 //             membershipId: '4611686018467485679',
 //         },
-//         stats: {
-//             wins: 0,
-//             losses: 0,
-//             ties: 0,
-//             kills: 0,
-//             deaths: 0,
-//             assists: 0,
-//         },
 //     };
 //     db.collection('userData').doc('7610179').set(fishmobile);
 //     db.collection('matches')
 //         .doc('7610179')
 //         .set({
-//             ownerDisplayName: fishmobile.membership.displayName,
+//             owner: 7610179,
 //             state: MATCH_STATE.WAITING_FOR_PLAYERS,
 //             maxPlayers: 2,
 //             players: { 7610179: 'Fishmobile' },
+//             created: Date.now(),
 //             expires: Date.now() + MATCH_EXPIRE_TIME,
 //         });
 // })();
-
-// Get activity history for testing
-// DJK0SH3R 3 4611686018486400483 2305843009421794463
-// Fishmobile 3 4611686018467485679 2305843009300307482
-
-// setInterval(async () => {
-//     const result = await getActivityHistory(3, '4611686018486400483', '2305843009421794463', 1);
-//     const result2 = await getActivityHistory(3, '4611686018467485679', '2305843009300307482', 1);
-//     const djActivities = result.data.Response.activities;
-//     const fishActivities = result2.data.Response.activities;
-//     // console.log('DJ ==================> ', result.data.Response.activities[0].activityDetails, result.data.Response.activities[0].values.completed, result.data.Response.activities[0].values.completionReason, 1);
-//     // console.log('FISH ================> ', result.data.Response.activities[0].activityDetails, result.data.Response.activities[0].values.completed, result.data.Response.activities[0].values.completionReason, 1);
-
-//     console.log('DJ============================================================');
-//     djActivities.forEach((a) => {
-//         console.log(`instanceId: ${a.activityDetails.instanceId}`);
-//         console.log(`completed: ${JSON.stringify(a.values.completed)}`);
-//         console.log(`completed reason: ${JSON.stringify(a.values.completionReason)}`);
-//         console.log(`completed reason: ${JSON.stringify(a.values.kills)})`);
-//         console.log(a.values);
-//         console.log('----------------------------------------');
-//     });
-//     console.log('FISH============================================================');
-//     fishActivities.forEach((a) => {
-//         console.log(`instanceId: ${a.activityDetails.instanceId}`);
-//         console.log(`completed: ${JSON.stringify(a.values.completed)})`);
-//         console.log(`completed reason: ${JSON.stringify(a.values.completionReason)})`);
-//         console.log(`completed reason: ${JSON.stringify(a.values.kills)})`);
-//         console.log(a.values);
-//         console.log('----------------------------------------');
-//     });
-// }, 3000);

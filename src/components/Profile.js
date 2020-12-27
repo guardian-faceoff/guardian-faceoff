@@ -118,6 +118,8 @@ const Profile = ({ history }) => {
                             <Box>{`KD/A: ${statsState.killsDeathsAssists.basic.displayValue}`}</Box>
                             <Box>{`Most Kills in a Game: ${statsState.bestSingleGameKills.basic.displayValue}`}</Box>
                             <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box>
+                            {/* <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box>
+                            <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box> */}
                         </Box>
                     )}
                     {statsLoading && (

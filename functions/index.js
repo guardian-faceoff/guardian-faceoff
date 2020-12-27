@@ -130,9 +130,7 @@ exports.createMatch = functions.https.onCall(async (data, context) => {
             if (userDoc.data().match) {
                 throw new functions.https.HttpsError('aborted', 'User already in a match.');
             }
-            // update user data
             t.update(userRef, { match: context.auth.uid });
-            // create match
             const players = {};
             players[context.auth.uid] = userDoc.data().membership.displayName;
             t.set(matchRef, {
@@ -178,9 +176,7 @@ exports.joinMatch = functions.https.onCall(async (matchId, context) => {
             if (userDoc.data().match) {
                 throw new functions.https.HttpsError('aborted', 'User already in a match.');
             }
-            // update user data
             t.update(userRef, { match: matchId });
-            // create match
             const players = { ...matchDoc.data().players };
             players[context.auth.uid] = userDoc.data().membership.displayName;
             let newState = MATCH_STATE.WAITING_FOR_PLAYERS;
@@ -225,7 +221,6 @@ exports.cancelMatch = functions.https.onCall(async (matchId, context) => {
             if (matchDoc.data().state !== MATCH_STATE.WAITING_FOR_PLAYERS) {
                 throw new functions.https.HttpsError('aborted', 'Cannot cancel a match that has started.');
             }
-            // update user data
             const snapshot = await usersRef.where('match', '==', context.auth.uid).get();
             snapshot.forEach((doc) => {
                 const userRef = db.collection('userData').doc(doc.id);
@@ -238,7 +233,6 @@ exports.cancelMatch = functions.https.onCall(async (matchId, context) => {
                 );
                 // TODO : ADD ALERT FOR USER
             });
-            // delete match
             t.delete(matchRef);
         });
     } catch (err) {
@@ -326,7 +320,7 @@ if (EMULATOR_MODE) {
 //     db.collection('matches')
 //         .doc('7610179')
 //         .set({
-//             owner: 7610179,
+//             owner: '7610179',
 //             state: MATCH_STATE.WAITING_FOR_PLAYERS,
 //             maxPlayers: 2,
 //             players: { 7610179: 'Fishmobile' },

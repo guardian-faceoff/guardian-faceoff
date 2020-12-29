@@ -98,9 +98,11 @@ export const getMatches = async (stateFilter) => {
 
 export const getCompletedMatches = async () => {
     const userData = await db.collection('userData').doc(firebase.auth().currentUser.uid).get();
+    let completedMatches;
     if (userData && userData.data) {
-        return userData.data().completedMatches;
+        completedMatches = userData.data().completedMatches;
     }
+    return completedMatches;
 };
 
 export const getBungieAuthUrl = async () => {

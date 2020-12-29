@@ -1,7 +1,7 @@
 {
     "TOKEN_URL": "https://www.bungie.net/Platform/App/OAuth/token/",
-    "MATCH_EXPIRE_TIME": 600000,
-    "MATCH_PLAY_EXPIRE_TIME": 900000,
+    "MATCH_EXPIRE_TIME": 900000,
+    "EXTRA_TIME_FOR_PROCESSING": 5000,
     "LOCALE": {},
     "MEMBERSHIP_TYPES": {
         "1": "Xbox",

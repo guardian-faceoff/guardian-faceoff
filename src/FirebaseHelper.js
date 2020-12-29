@@ -97,10 +97,10 @@ export const getMatches = async (stateFilter) => {
 };
 
 export const getCompletedMatches = async () => {
-    const { uid } = firebase.auth().currentUser;
-    const matchesRef = db.collection('completedMatches');
-    const snapshot = await matchesRef.where(`players.${uid}`, 'not-in', ['']).orderBy(`players.${uid}`).orderBy('matchTime', 'desc').limit(100).get();
-    return snapshotToArray(snapshot);
+    const userData = await db.collection('userData').doc(firebase.auth().currentUser.uid).get();
+    if (userData && userData.data) {
+        return userData.data().completedMatches;
+    }
 };
 
 export const getBungieAuthUrl = async () => {

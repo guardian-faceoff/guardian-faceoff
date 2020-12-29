@@ -1,13 +1,15 @@
 import React from 'react';
 import { HashRouter } from 'react-router-dom';
 import { createMuiTheme, ThemeProvider, makeStyles } from '@material-ui/core/styles';
-import { Box } from '@material-ui/core';
+import { Box, Toolbar } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { grey, teal } from '@material-ui/core/colors';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
 import Navigation from './components/Navigation';
 import { AppContextWrapper } from './AppContext';
 import Routes from './Routes';
 import SnackBarManager from './SnackBarManager';
+// import { getCurrentUser } from './FirebaseHelper';
 
 const useStyles = makeStyles((theme) => {
     return {
@@ -16,6 +18,13 @@ const useStyles = makeStyles((theme) => {
             flexDirection: 'column',
             height: '100vh',
             maWidth: '100vw',
+        },
+        boxSmall: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            maWidth: '100vw',
+            marginLeft: 200,
         },
         container: {
             flex: '1 auto',
@@ -27,6 +36,7 @@ const useStyles = makeStyles((theme) => {
 });
 
 const App = () => {
+    const matches = useMediaQuery('(min-width:960px)');
     const classes = useStyles();
 
     const theme = React.useMemo(() => {
@@ -47,20 +57,23 @@ const App = () => {
 
     return (
         <HashRouter>
-            <AppContextWrapper>
-                <ThemeProvider theme={theme}>
-                    <CssBaseline />
-                    <Box className={classes.box}>
-                        <Box className={classes.navigation}>
+            <AppContextWrapper
+                renderContent={(currentUser) => {
+                    return (
+                        <ThemeProvider theme={theme}>
+                            <CssBaseline />
                             <Navigation />
-                        </Box>
-                        <Box className={classes.container}>
-                            <Routes />
-                            <SnackBarManager />
-                        </Box>
-                    </Box>
-                </ThemeProvider>
-            </AppContextWrapper>
+                            <Toolbar />
+                            <Box className={matches && currentUser ? classes.boxSmall : classes.box}>
+                                <Box className={classes.container}>
+                                    <Routes />
+                                    <SnackBarManager />
+                                </Box>
+                            </Box>
+                        </ThemeProvider>
+                    );
+                }}
+            />
         </HashRouter>
     );
 };

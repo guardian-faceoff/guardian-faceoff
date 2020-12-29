@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useRef, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router';
-import { getBungieAuthUrl, loginWithCustomToken, onAuthStateChanged, refreshLogin, logoutOfFirebase } from './FirebaseHelper';
+import { getBungieAuthUrl, loginWithCustomToken, onAuthStateChanged, refreshLogin, logoutOfFirebase, getCurrentUser } from './FirebaseHelper';
 
 const { VERSION, BUNGIE_APP_ID, BUNGIE_API_KEY } = window.RESOURCES;
 
@@ -18,7 +18,7 @@ if (window.location.search !== '') {
     window.history.pushState('d2-bounties', 'd2-bounties', window.location.origin + window.location.pathname);
 }
 
-const AppContextWrapper = withRouter(({ children, history }) => {
+const AppContextWrapper = withRouter(({ renderContent, history }) => {
     const [appState, setAppState] = useState({
         loading: true,
     });
@@ -147,15 +147,15 @@ const AppContextWrapper = withRouter(({ children, history }) => {
                     BUNGIE_API_KEY,
                 }}
             >
-                {children}
+                {renderContent(getCurrentUser())}
             </AppContext.Provider>
         </>
     );
 });
 
 AppContextWrapper.propTypes = {
-    children: PropTypes.node,
     history: PropTypes.object,
+    renderContent: PropTypes.func,
 };
 
 export { AppContextWrapper };

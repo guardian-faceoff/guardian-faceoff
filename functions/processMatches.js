@@ -1,7 +1,7 @@
 const firebaseAdmin = require('firebase-admin');
 const functions = require('firebase-functions');
 const { getActivityHistory } = require('./bungieHelper');
-const { MATCH_STATE } = require('../src/Constants.json');
+const { MATCH_STATE, EXTRA_TIME_FOR_PROCESSING } = require('../src/Constants.json');
 
 const getPlayerStats = (playerCommonActivity, wins, losses, ties) => {
     return {
@@ -22,7 +22,7 @@ const processMatch = async (db, matchDoc) => {
     try {
         const startTime = Date.now();
         const matchData = matchDoc.data();
-        if (matchData.expires > Date.now()) {
+        if (matchData.expires + EXTRA_TIME_FOR_PROCESSING > Date.now()) {
             const playersSnapshot = await db.collection('userData').where('match', '==', matchDoc.id).get();
             const playerActivityHistory = {};
             const playerActivityHistoryPromises = [];
@@ -114,38 +114,68 @@ const processMatch = async (db, matchDoc) => {
                                 return playerHadLessThanMostScore || playerCompletedMatch;
                             });
 
+                            const completedMatchData = {
+                                ...matchData,
+                                state: playersNotCompleted.length > 0 ? MATCH_STATE.PLAYER_QUIT : MATCH_STATE.COMPLETE,
+                                matchTime: new Date(commonActivityTime).getTime(),
+                                winners,
+                                losers,
+                                stats: sortedPlayersByScoreAndCompleted.map((playerId) => {
+                                    return {
+                                        playerId,
+                                        score: playersCommonActivityMap[playerId].values.score.basic.value,
+                                        kills: playersCommonActivityMap[playerId].values.kills.basic.value,
+                                        deaths: playersCommonActivityMap[playerId].values.deaths.basic.value,
+                                        assists: playersCommonActivityMap[playerId].values.assists.basic.value,
+                                        completed: playersCommonActivityMap[playerId].values.completed.basic.value === 1,
+                                    };
+                                }),
+                            };
+
                             const promises = [];
                             if (winners.length > 1) {
                                 winners.forEach(async (playerId) => {
-                                    promises.push(t.set(db.collection('userData').doc(playerId), getPlayerStats(playersCommonActivityMap[playerId], 0, 0, 1), { merge: true }));
+                                    promises.push(
+                                        t.set(
+                                            db.collection('userData').doc(playerId),
+                                            {
+                                                ...getPlayerStats(playersCommonActivityMap[playerId], 0, 0, 1),
+                                                completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
+                                            },
+                                            { merge: true }
+                                        )
+                                    );
                                 });
                             } else {
                                 winners.forEach(async (playerId) => {
-                                    promises.push(t.set(db.collection('userData').doc(playerId), getPlayerStats(playersCommonActivityMap[playerId], 1, 0, 0), { merge: true }));
+                                    promises.push(
+                                        t.set(
+                                            db.collection('userData').doc(playerId),
+                                            {
+                                                ...getPlayerStats(playersCommonActivityMap[playerId], 1, 0, 0),
+                                                completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
+                                            },
+                                            { merge: true }
+                                        )
+                                    );
                                 });
                             }
                             losers.forEach(async (playerId) => {
-                                promises.push(t.set(db.collection('userData').doc(playerId), getPlayerStats(playersCommonActivityMap[playerId], 0, 1, 0), { merge: true }));
+                                promises.push(
+                                    t.set(
+                                        db.collection('userData').doc(playerId),
+                                        {
+                                            ...getPlayerStats(playersCommonActivityMap[playerId], 0, 1, 0),
+
+                                            completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
+                                        },
+                                        { merge: true }
+                                    )
+                                );
                             });
-                            promises.push(
-                                t.set(db.collection('completedMatches').doc(), {
-                                    ...matchData,
-                                    state: playersNotCompleted.length > 0 ? MATCH_STATE.PLAYER_QUIT : MATCH_STATE.COMPLETE,
-                                    matchTime: new Date(commonActivityTime).getTime(),
-                                    winners,
-                                    losers,
-                                    stats: sortedPlayersByScoreAndCompleted.map((playerId) => {
-                                        return {
-                                            playerId,
-                                            score: playersCommonActivityMap[playerId].values.score.basic.value,
-                                            kills: playersCommonActivityMap[playerId].values.kills.basic.value,
-                                            deaths: playersCommonActivityMap[playerId].values.deaths.basic.value,
-                                            assists: playersCommonActivityMap[playerId].values.assists.basic.value,
-                                            completed: playersCommonActivityMap[playerId].values.completed.basic.value === 1,
-                                        };
-                                    }),
-                                })
-                            );
+
+                            promises.push(t.set(db.collection('completedMatches').doc(), completedMatchData));
+
                             await Promise.all(promises);
                             await t.delete(db.collection('matches').doc(matchDoc.id));
                         } else {
@@ -159,20 +189,20 @@ const processMatch = async (db, matchDoc) => {
             }
         } else {
             console.log('Match expired - setting it as such.');
+            const now = Date.now();
             await db.runTransaction(async (t) => {
                 const promises = [];
-                promises.push(
-                    t.set(db.collection('completedMatches').doc(), {
-                        ...matchData,
-                        matchTime: Date.now(),
-                        state: MATCH_STATE.EXPIRED,
-                        stats: Object.keys(matchData.players).map((playerId) => {
-                            return {
-                                playerId,
-                            };
-                        }),
-                    })
-                );
+                const completedMatchData = {
+                    ...matchData,
+                    matchTime: now,
+                    state: MATCH_STATE.EXPIRED,
+                    stats: Object.keys(matchData.players).map((playerId) => {
+                        return {
+                            playerId,
+                        };
+                    }),
+                };
+                promises.push(t.set(db.collection('completedMatches').doc(), completedMatchData));
 
                 Object.keys(matchData.players).forEach(async (playerId) => {
                     promises.push(
@@ -183,6 +213,7 @@ const processMatch = async (db, matchDoc) => {
                                 stats: {
                                     expires: firebaseAdmin.firestore.FieldValue.increment(1),
                                 },
+                                completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
                             },
                             { merge: true }
                         )
@@ -207,7 +238,7 @@ const processMatches = async (db) => {
         });
 
         const matchesRef = db.collection('matches');
-        const matchesSnapshot = await matchesRef.where('state', '==', MATCH_STATE.IN_PROGRESS).get();
+        const matchesSnapshot = await matchesRef.where('state', 'in', [MATCH_STATE.WAITING_FOR_PLAYERS, MATCH_STATE.IN_PROGRESS]).get();
         const matchProcessingPromises = [];
         matchesSnapshot.forEach(async (matchDoc) => {
             matchProcessingPromises.push(processMatch(db, matchDoc));

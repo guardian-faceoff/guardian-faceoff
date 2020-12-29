@@ -1,13 +1,10 @@
 import React, { useContext } from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Badge, Button, Box } from '@material-ui/core';
+import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Button, Box, Drawer, List, ListItem, ListItemText } from '@material-ui/core';
 import { fade, makeStyles } from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
-// import SearchIcon from '@material-ui/icons/Search';
-// import AccountCircle from '@material-ui/icons/AccountCircle';
-import NotificationsIcon from '@material-ui/icons/Notifications';
-// import MoreIcon from '@material-ui/icons/MoreVert';
 import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
 import { getCurrentUser } from '../FirebaseHelper';
 import { AppContext } from '../AppContext';
 
@@ -75,11 +72,18 @@ const useStyles = makeStyles((theme) => ({
     navButton: {
         marginLeft: theme.spacing(),
     },
+    drawerContent: {
+        width: 200,
+    },
+    appBar: {
+        zIndex: theme.zIndex.drawer + 1,
+    },
 }));
 
 const Navigation = ({ history }) => {
     const classes = useStyles();
     const [anchorEl, setAnchorEl] = React.useState(null);
+    const matches = useMediaQuery('(min-width:960px)');
     const { login, logout, appState } = useContext(AppContext);
 
     const isMenuOpen = Boolean(anchorEl);
@@ -97,18 +101,8 @@ const Navigation = ({ history }) => {
         history.push('/');
     };
 
-    const menuId = 'primary-search-account-menu';
     const renderMenu = (
-        <Menu
-            anchorEl={anchorEl}
-            id={menuId}
-            keepMounted
-            open={isMenuOpen}
-            onClose={handleMenuClose}
-            getContentAnchorEl={null}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
+        <Menu anchorEl={anchorEl} keepMounted open={isMenuOpen} onClose={handleMenuClose} getContentAnchorEl={null} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} transformOrigin={{ vertical: 'top', horizontal: 'center' }}>
             <MenuItem
                 onClick={() => {
                     history.push('/');
@@ -117,7 +111,7 @@ const Navigation = ({ history }) => {
             >
                 Home
             </MenuItem>
-            {!getCurrentUser() && (
+            {/* {!getCurrentUser() && (
                 <MenuItem
                     onClick={() => {
                         login();
@@ -126,7 +120,7 @@ const Navigation = ({ history }) => {
                 >
                     Login
                 </MenuItem>
-            )}
+            )} */}
             {getCurrentUser() && (
                 <MenuItem
                     onClick={() => {
@@ -190,21 +184,23 @@ const Navigation = ({ history }) => {
         }
         return (
             <>
-                <IconButton aria-label="show 2 new notifications" color="inherit">
+                {/* <IconButton color="inherit">
                     <Badge badgeContent={2} color="error">
                         <NotificationsIcon />
                     </Badge>
-                </IconButton>
-                <IconButton edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit">
-                    <MenuIcon />
-                </IconButton>
+                </IconButton> */}
+                {!matches && (
+                    <IconButton edge="end" onClick={handleProfileMenuOpen} color="inherit">
+                        <MenuIcon />
+                    </IconButton>
+                )}
             </>
         );
     };
 
     return (
-        <div className={classes.grow}>
-            <AppBar position="static">
+        <>
+            <AppBar className={classes.appBar} position="fixed">
                 <Toolbar>
                     <Typography
                         className={classes.title}
@@ -216,12 +212,70 @@ const Navigation = ({ history }) => {
                     >
                         Guardian Faceoff
                     </Typography>
-                    <div className={classes.grow} />
+                    <Box className={classes.grow} />
                     {getNavbarControls()}
                 </Toolbar>
             </AppBar>
             {renderMenu}
-        </div>
+            {matches && getCurrentUser() && (
+                <Drawer variant="permanent">
+                    <Toolbar />
+                    <Box className={classes.drawerContent}>
+                        <List>
+                            <ListItem
+                                button
+                                onClick={() => {
+                                    history.push('/');
+                                }}
+                            >
+                                {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                <ListItemText primary="Home" />
+                            </ListItem>
+                            {getCurrentUser() && (
+                                <>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            history.push('/matches');
+                                        }}
+                                    >
+                                        {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                        <ListItemText primary="Matches" />
+                                    </ListItem>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            history.push('/completedMatches');
+                                        }}
+                                    >
+                                        {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                        <ListItemText primary="Completed Matches" />
+                                    </ListItem>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            history.push('/profile');
+                                        }}
+                                    >
+                                        {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                        <ListItemText primary="Profile" />
+                                    </ListItem>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            logUserOut();
+                                        }}
+                                    >
+                                        {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                        <ListItemText primary="Log Out" />
+                                    </ListItem>
+                                </>
+                            )}
+                        </List>
+                    </Box>
+                </Drawer>
+            )}
+        </>
     );
 };
 

@@ -5,6 +5,7 @@ import { withRouter } from 'react-router';
 // import axios from 'axios';
 import PropTypes from 'prop-types';
 import uuid from 'uuid';
+import StarIcon from '@material-ui/icons/Star';
 import { AppContext } from '../AppContext';
 import { getCurrentUser, getCompletedMatches } from '../FirebaseHelper';
 import Constants from '../Constants.json';
@@ -51,6 +52,15 @@ const useStyles = makeStyles((theme) => {
             marginTop: theme.spacing(),
             background: theme.palette.primary.dark,
             color: theme.palette.primary.contrastText,
+        },
+        wrapIcon: {
+            verticalAlign: 'middle',
+            display: 'inline-flex',
+            horizontalAlign: 'middle',
+        },
+        star: {
+            height: '0.8em',
+            marginTop: '0.15em',
         },
     };
 });
@@ -106,7 +116,10 @@ const CompletedMatches = ({ history }) => {
                                     {match.stats.map((row) => (
                                         <TableRow key={row.playerId}>
                                             <TableCell component="th" scope="row">
-                                                {match.players[row.playerId]}
+                                                <Typography variant="subtitle1" className={classes.wrapIcon}>
+                                                    {match.players[row.playerId]}
+                                                    {match.winners && match.winners.indexOf(row.playerId) > -1 && <StarIcon className={classes.star} />}
+                                                </Typography>
                                             </TableCell>
                                             <TableCell align="center">{row.score ? row.score : '-'}</TableCell>
                                             <TableCell align="center">{row.kills ? row.kills : '-'}</TableCell>
@@ -132,6 +145,7 @@ const CompletedMatches = ({ history }) => {
                         Completed Matches
                     </Typography>
                     {!loading && getCurrentUser() && completedMatchesState && <Box>{getMatchesJsx()}</Box>}
+                    {!loading && getCurrentUser() && !completedMatchesState && <Box>No completed matches to display.</Box>}
                     {loading && <CircularProgress color="secondary" />}
                 </Box>
             </Grid>

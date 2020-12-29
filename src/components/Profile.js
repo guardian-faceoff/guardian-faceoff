@@ -30,13 +30,13 @@ const useStyles = makeStyles((theme) => {
             margin: theme.spacing(),
         },
         profilePic: {
-            width: 150,
-            height: 150,
+            width: 100,
+            height: 100,
             margin: theme.spacing(),
         },
         membershipIcon: {
-            width: 50,
-            height: 50,
+            width: 25,
+            height: 25,
             margin: theme.spacing(),
         },
         title: {
@@ -74,7 +74,6 @@ const Profile = ({ history }) => {
                     'X-API-Key': BUNGIE_API_KEY,
                 },
             });
-            // console.log(data.Response.mergedAllCharacters.results.allPvP.allTime);
             setStatsState(data.Response.mergedAllCharacters.results.allPvP.allTime);
         } catch (e) {
             console.error(e);
@@ -99,9 +98,10 @@ const Profile = ({ history }) => {
                 <Paper className={classes.paper}>
                     {!userLoading && getCurrentUser() && userState && (
                         <Box>
-                            <Typography className={classes.title} variant="h4">{`Welcome back ${getCurrentUser().displayName}!`}</Typography>
+                            <Typography className={classes.title} variant="h4">{`${getCurrentUser().displayName}`}</Typography>
                             <img className={classes.profilePic} alt="profile" src={getCurrentUser().photoURL} />
-                            <Box>{`You are currently set to play on: ${Constants.MEMBERSHIP_TYPES[userState.membership.membershipType]}`}</Box>
+                            <Box>You are currently set to play on:</Box>
+                            <Box>{Constants.MEMBERSHIP_TYPES[userState.membership.membershipType]}</Box>
                             <img className={classes.membershipIcon} alt="current-membership" src={userState.membership.iconURL} />
                         </Box>
                     )}
@@ -110,16 +110,34 @@ const Profile = ({ history }) => {
                             <CircularProgress color="secondary" />
                         </Box>
                     )}
+                    {!statsLoading && getCurrentUser() && userState && (
+                        <Box>
+                            <Typography className={classes.title} variant="h5">
+                                Guardian Faceoff Stats:
+                            </Typography>
+                            {userState.stats && (
+                                <>
+                                    <Box>{`Wins: ${userState.stats.wins || 0}`}</Box>
+                                    <Box>{`Ties: ${userState.stats.ties || 0}`}</Box>
+                                    <Box>{`Losses: ${userState.stats.losses || 0}`}</Box>
+                                    <Box>{`Score: ${userState.stats.score || 0}`}</Box>
+                                    <Box>{`Kills: ${userState.stats.kills || 0}`}</Box>
+                                    <Box>{`Deaths: ${userState.stats.deaths || 0}`}</Box>
+                                    <Box>{`Assists: ${userState.stats.assists || 0}`}</Box>
+                                    {userState.stats.kills && userState.stats.deaths && <Box>{`K/D Ratio: ${Math.round(((userState.stats.kills / userState.stats.deaths) * 100) / 100)}`}</Box>}
+                                </>
+                            )}
+                            {!userState.stats && <Box>No stats to display yet - play some matches!</Box>}
+                        </Box>
+                    )}
                     {!statsLoading && getCurrentUser() && statsState && (
                         <Box>
-                            <Typography className={classes.title} variant="h4">
-                                Stats:
+                            <Typography className={classes.title} variant="h5">
+                                Destiny 2 Stats:
                             </Typography>
                             <Box>{`KD/A: ${statsState.killsDeathsAssists.basic.displayValue}`}</Box>
                             <Box>{`Most Kills in a Game: ${statsState.bestSingleGameKills.basic.displayValue}`}</Box>
                             <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box>
-                            {/* <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box>
-                            <Box>{`Most Kills in a Life: ${statsState.longestKillSpree.basic.displayValue}`}</Box> */}
                         </Box>
                     )}
                     {statsLoading && (

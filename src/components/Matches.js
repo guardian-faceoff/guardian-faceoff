@@ -9,12 +9,19 @@ import { AppContext } from '../AppContext';
 import { getCurrentMatch, getCurrentUser, getMatches, createMatch, joinMatch, cancelMatch } from '../FirebaseHelper';
 import Constants from '../Constants.json';
 
+const msToMinutesAndSeconds = (millis) => {
+    const minutes = Math.floor(millis / 60000);
+    const seconds = ((millis % 60000) / 1000).toFixed(0);
+    return `${minutes} mins and ${seconds} seconds`;
+};
+
 const useStyles = makeStyles((theme) => {
     return {
         grid: {
             height: '100vh',
         },
         paper: {
+            position: 'relative',
             width: 'em',
             padding: theme.spacing(4),
             margin: theme.spacing(2),
@@ -45,7 +52,11 @@ const useStyles = makeStyles((theme) => {
             marginBottom: theme.spacing(2),
         },
         matchButtonContainer: {
-            textAlign: 'left',
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            marginTop: theme.spacing(2),
+            marginRight: theme.spacing(3),
         },
         sectionText: {
             marginTop: theme.spacing(4),
@@ -59,6 +70,8 @@ const Matches = ({ history }) => {
     const [matchesState, setMatchesState] = useState([]);
     const [currentMatchState, setCurrentMatchState] = useState();
     const [loading, setLoading] = useState(true);
+    const [, updateState] = React.useState();
+    const forceUpdate = React.useCallback(() => updateState({}), []);
 
     const getListOfMatches = async () => {
         setLoading(true);
@@ -83,6 +96,13 @@ const Matches = ({ history }) => {
         }
     }, []);
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            forceUpdate();
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     const getMatchesJsx = () => {
         if (matchesState.length > 0) {
             return matchesState.map((match) => {
@@ -91,8 +111,10 @@ const Matches = ({ history }) => {
                         <Typography variant="h5">{`${match.players[match.owner]}'s Match`}</Typography>
                         <Typography>{`${Constants.MATCH_STATE[match.state]}`}</Typography>
                         <Divider className={classes.divider} />
-                        <Box>{`Players: ${Object.keys(match.players).length}/${match.maxPlayers}`}</Box>
-                        <Box>{`Expires: ${new Date(match.expires).toLocaleTimeString()} on ${new Date(match.expires).toLocaleDateString()} `}</Box>
+                        <Box>{`${Object.keys(match.players).length}/${match.maxPlayers} players joined`}</Box>
+                        {/* <Box>{`Expires: ${new Date(match.expires).toLocaleTimeString()} on ${new Date(match.expires).toLocaleDateString()} `}</Box> */}
+                        {match.expires - Date.now() > 0 && <Box>{`Expires in ${msToMinutesAndSeconds(match.expires - Date.now())}`}</Box>}
+                        {match.expires - Date.now() <= 0 && <Box>Expires soon...</Box>}
                         <Box>
                             {`Players Joined: ${Object.keys(match.players)
                                 .map((playerId) => match.players[playerId])
@@ -134,7 +156,7 @@ const Matches = ({ history }) => {
         }
         return (
             <Box className={classes.sectionText}>
-                <Typography>No matches to join. Create one!</Typography>
+                <Typography>{!currentMatchState ? 'No matches to join. Create one!' : 'No matches to display.'}</Typography>
             </Box>
         );
     };
@@ -177,13 +199,17 @@ const Matches = ({ history }) => {
                     )}
                     {!loading && getCurrentUser() && currentMatchState && (
                         <>
-                            <Typography className={classes.sectionText}>Your Current Match</Typography>
+                            <Typography className={classes.sectionText} variant="h5">
+                                Your Current Match
+                            </Typography>
                             <Paper className={classes.paper} key={uuid()}>
                                 <Typography variant="h5">{`${currentMatchState.players[currentMatchState.owner]}'s Match`}</Typography>
                                 <Typography>{`${Constants.MATCH_STATE[currentMatchState.state]}`}</Typography>
                                 <Divider className={classes.divider} />
-                                <Box>{`Players: ${Object.keys(currentMatchState.players).length}/${currentMatchState.maxPlayers}`}</Box>
-                                <Box>{`Expires: ${new Date(currentMatchState.expires).toLocaleTimeString()} on ${new Date(currentMatchState.expires).toLocaleDateString()} `}</Box>
+                                <Box>{`${Object.keys(currentMatchState.players).length}/${currentMatchState.maxPlayers} players joined`}</Box>
+                                {/* <Box>{`Expires: ${new Date(currentMatchState.expires).toLocaleTimeString()} on ${new Date(currentMatchState.expires).toLocaleDateString()} `}</Box> */}
+                                {currentMatchState.expires - Date.now() > 0 && <Box>{`Expires in ${msToMinutesAndSeconds(currentMatchState.expires - Date.now())}`}</Box>}
+                                {currentMatchState.expires - Date.now() <= 0 && <Box>Expires soon...</Box>}
                                 <Box>
                                     {`Players Joined: ${Object.keys(currentMatchState.players)
                                         .map((playerId) => currentMatchState.players[playerId])
@@ -222,7 +248,11 @@ const Matches = ({ history }) => {
                             </Paper>
                         </>
                     )}
-                    {!currentMatchState && <Typography className={classes.sectionText}>Available Matches</Typography>}
+                    {!loading && (
+                        <Typography className={classes.sectionText} variant="h5">
+                            Available Matches
+                        </Typography>
+                    )}
                     {!loading && getCurrentUser() && matchesState && <Box>{getMatchesJsx()}</Box>}
                     {loading && <CircularProgress color="secondary" />}
                 </Box>

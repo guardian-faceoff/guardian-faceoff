@@ -5,17 +5,41 @@ const { MATCH_STATE, EXTRA_TIME_FOR_PROCESSING } = require('../src/Constants.jso
 
 const getPlayerStats = (playerCommonActivity, wins, losses, ties) => {
     return {
-        match: null,
-        stats: {
-            wins: firebaseAdmin.firestore.FieldValue.increment(wins),
-            losses: firebaseAdmin.firestore.FieldValue.increment(losses),
-            ties: firebaseAdmin.firestore.FieldValue.increment(ties),
-            score: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.score.basic.value),
-            kills: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.kills.basic.value),
-            deaths: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.deaths.basic.value),
-            assists: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.assists.basic.value),
-        },
+        wins: firebaseAdmin.firestore.FieldValue.increment(wins),
+        losses: firebaseAdmin.firestore.FieldValue.increment(losses),
+        ties: firebaseAdmin.firestore.FieldValue.increment(ties),
+        expires: firebaseAdmin.firestore.FieldValue.increment(0),
+        score: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.score.basic.value),
+        kills: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.kills.basic.value),
+        deaths: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.deaths.basic.value),
+        assists: firebaseAdmin.firestore.FieldValue.increment(playerCommonActivity.values.assists.basic.value),
     };
+};
+
+const buildCompletedMatchAndStats = (db, t, matchData, completedMatchData, playersCommonActivityMap, promises, array, wins, losses, ties) => {
+    array.forEach(async (playerId) => {
+        promises.push(
+            t.set(
+                db.collection('userStats').doc(playerId),
+                {
+                    playerId,
+                    displayName: matchData.players[playerId],
+                    ...getPlayerStats(playersCommonActivityMap[playerId], wins, losses, ties),
+                },
+                { merge: true }
+            )
+        );
+        promises.push(
+            t.set(
+                db.collection('userData').doc(playerId),
+                {
+                    match: null,
+                    completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
+                },
+                { merge: true }
+            )
+        );
+    });
 };
 
 const processMatch = async (db, matchDoc) => {
@@ -41,7 +65,7 @@ const processMatch = async (db, matchDoc) => {
             let commonActivityTime;
             if (matchData.commonActivityId && matchData.commonActivityId !== null) {
                 commonActivityId = matchData.commonActivityId;
-            } else {
+            } else if (firstPlayerActivities) {
                 firstPlayerActivities.forEach((activity) => {
                     if (!commonActivityId && new Date(activity.period).getTime() > matchData.created) {
                         const activityId = activity.activityDetails.instanceId;
@@ -77,15 +101,12 @@ const processMatch = async (db, matchDoc) => {
                             [playersCommonActivityMap[playerId]] = playerActivities.filter((activity) => {
                                 return commonActivityId === activity.activityDetails.instanceId;
                             });
-                            // console.log(playersCommonActivityMap[playerId].values.completed);
-                            // console.log(playersCommonActivityMap[playerId].values.completionReason);
                             if (playersCommonActivityMap[playerId].values.completed.basic.value === 1) {
                                 playersCompleted.push(playerId);
                             } else {
                                 playersNotCompleted.push(playerId);
                             }
                         });
-                        console.log('====================== playersCompleted.length', playersCompleted.length);
 
                         if (playersCompleted.length > 0) {
                             // TODO: check time played seconds maybe?
@@ -134,45 +155,11 @@ const processMatch = async (db, matchDoc) => {
 
                             const promises = [];
                             if (winners.length > 1) {
-                                winners.forEach(async (playerId) => {
-                                    promises.push(
-                                        t.set(
-                                            db.collection('userData').doc(playerId),
-                                            {
-                                                ...getPlayerStats(playersCommonActivityMap[playerId], 0, 0, 1),
-                                                completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
-                                            },
-                                            { merge: true }
-                                        )
-                                    );
-                                });
+                                buildCompletedMatchAndStats(db, t, matchData, completedMatchData, playersCommonActivityMap, promises, winners, 0, 0, 1);
                             } else {
-                                winners.forEach(async (playerId) => {
-                                    promises.push(
-                                        t.set(
-                                            db.collection('userData').doc(playerId),
-                                            {
-                                                ...getPlayerStats(playersCommonActivityMap[playerId], 1, 0, 0),
-                                                completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
-                                            },
-                                            { merge: true }
-                                        )
-                                    );
-                                });
+                                buildCompletedMatchAndStats(db, t, matchData, completedMatchData, playersCommonActivityMap, promises, winners, 1, 0, 0);
                             }
-                            losers.forEach(async (playerId) => {
-                                promises.push(
-                                    t.set(
-                                        db.collection('userData').doc(playerId),
-                                        {
-                                            ...getPlayerStats(playersCommonActivityMap[playerId], 0, 1, 0),
-
-                                            completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
-                                        },
-                                        { merge: true }
-                                    )
-                                );
-                            });
+                            buildCompletedMatchAndStats(db, t, matchData, completedMatchData, playersCommonActivityMap, promises, losers, 0, 1, 0);
 
                             promises.push(t.set(db.collection('completedMatches').doc(), completedMatchData));
 
@@ -188,7 +175,7 @@ const processMatch = async (db, matchDoc) => {
                 }
             }
         } else {
-            console.log('Match expired - setting it as such.');
+            console.log('======================================> Match expired - setting it as such.');
             const now = Date.now();
             await db.runTransaction(async (t) => {
                 const promises = [];
@@ -207,12 +194,20 @@ const processMatch = async (db, matchDoc) => {
                 Object.keys(matchData.players).forEach(async (playerId) => {
                     promises.push(
                         t.set(
+                            db.collection('userStats').doc(playerId),
+                            {
+                                playerId,
+                                displayName: matchData.players[playerId],
+                                expires: firebaseAdmin.firestore.FieldValue.increment(1),
+                            },
+                            { merge: true }
+                        )
+                    );
+                    promises.push(
+                        t.set(
                             db.collection('userData').doc(playerId),
                             {
                                 match: null,
-                                stats: {
-                                    expires: firebaseAdmin.firestore.FieldValue.increment(1),
-                                },
                                 completedMatches: firebaseAdmin.firestore.FieldValue.arrayUnion(completedMatchData),
                             },
                             { merge: true }

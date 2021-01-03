@@ -7,9 +7,7 @@ import { getCurrentUser } from '../FirebaseHelper';
 
 const useStyles = makeStyles((theme) => {
     return {
-        grid: {
-            height: '100vh',
-        },
+        grid: {},
         paper: {
             width: '37em',
             padding: theme.spacing(4),

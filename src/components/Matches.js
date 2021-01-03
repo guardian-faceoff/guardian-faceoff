@@ -6,20 +6,22 @@ import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
 import uuid from 'uuid';
 import { AppContext } from '../AppContext';
-import { getCurrentMatch, getCurrentUser, getMatches, createMatch, joinMatch, cancelMatch } from '../FirebaseHelper';
+import { getCurrentMatch, watchDoc, getCurrentUser, getMatches, createMatch, joinMatch, cancelMatch } from '../FirebaseHelper';
 import Constants from '../Constants.json';
 
 const msToMinutesAndSeconds = (millis) => {
-    const minutes = Math.floor(millis / 60000);
-    const seconds = ((millis % 60000) / 1000).toFixed(0);
-    return `${minutes} mins and ${seconds} seconds`;
+    let minutes = Math.floor(millis / 60000);
+    let seconds = ((millis % 60000) / 1000).toFixed(0);
+    if (seconds === '60') {
+        minutes += 1;
+        seconds = '0';
+    }
+    return `${minutes} minutes and ${seconds} seconds`;
 };
 
 const useStyles = makeStyles((theme) => {
     return {
-        grid: {
-            height: '100vh',
-        },
+        grid: {},
         paper: {
             position: 'relative',
             width: 'em',
@@ -73,13 +75,29 @@ const Matches = ({ history }) => {
     const [, updateState] = React.useState();
     const forceUpdate = React.useCallback(() => updateState({}), []);
 
+    const watchCurrentMatch = (currentMatch) => {
+        watchDoc(
+            'matches',
+            currentMatch.id,
+            (currentMatchIncoming) => {
+                setCurrentMatchState(currentMatchIncoming);
+            },
+            (e) => {
+                console.error(e);
+                showError('Error getting live updates for current match.');
+            }
+        );
+    };
+
     const getListOfMatches = async () => {
         setLoading(true);
         try {
-            const currentMatch = await getCurrentMatch();
-            const matches = await getMatches();
+            const [currentMatch, matches] = await Promise.all([getCurrentMatch(), getMatches()]);
             setCurrentMatchState(currentMatch);
             setMatchesState(currentMatch ? matches.filter((match) => match.owner !== currentMatch.owner) : matches);
+            if (currentMatch) {
+                watchCurrentMatch(currentMatch);
+            }
         } catch (e) {
             console.error(e);
             showError('Error getting list of matches.');

@@ -44,8 +44,25 @@ const updateUserInfo = async (bungieId) => {
         .doc(bungieId)
         .set(
             {
-                currentCharacter,
+                currentCharacter: { ...currentCharacter, emblemUrl: IMG_URL_ROOT + currentCharacter.emblemPath },
                 membership: { ...primaryMembership, iconURL: IMG_URL_ROOT + primaryMembership.iconPath },
+            },
+            { merge: true }
+        );
+    db.collection('userStats')
+        .doc(bungieId)
+        .set(
+            {
+                playerId: bungieId,
+                displayName: primaryMembership.displayName,
+                wins: firebaseAdmin.firestore.FieldValue.increment(0),
+                losses: firebaseAdmin.firestore.FieldValue.increment(0),
+                ties: firebaseAdmin.firestore.FieldValue.increment(0),
+                expires: firebaseAdmin.firestore.FieldValue.increment(0),
+                score: firebaseAdmin.firestore.FieldValue.increment(0),
+                kills: firebaseAdmin.firestore.FieldValue.increment(0),
+                deaths: firebaseAdmin.firestore.FieldValue.increment(0),
+                assists: firebaseAdmin.firestore.FieldValue.increment(0),
             },
             { merge: true }
         );
@@ -298,6 +315,7 @@ if (EMULATOR_MODE) {
 //             stats: { 144602215: 93, 392767087: 29, 1735777505: 43, 1935470627: 1261, 1943323491: 106, 2996146975: 45, 4244567218: 48 },
 //             minutesPlayedThisSession: '171',
 //             emblemPath: '/common/destiny2_content/icons/caeffd922381d7a2d8b70f1e9fe8db6c.jpg',
+//             emblemUrl: 'https://www.bungie.net/common/destiny2_content/icons/caeffd922381d7a2d8b70f1e9fe8db6c.jpg',
 //             genderHash: 3111576190,
 //             genderType: 0,
 //             emblemHash: 1138508272,

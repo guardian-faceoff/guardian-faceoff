@@ -29,6 +29,9 @@ if (window.location.hostname.indexOf('localhost') > -1) {
     auth.useEmulator('http://localhost:9099/');
 }
 
+// track watchers to allow for unsubbing
+const watchMap = {};
+
 const snapshotToArray = (snapshot) => {
     const returnArr = [];
     snapshot.forEach((childSnapshot) => {
@@ -53,7 +56,12 @@ export const loginWithCustomToken = async (customToken) => {
     return res;
 };
 
-export const logoutOfFirebase = () => firebase.auth().signOut();
+export const logoutOfFirebase = () => {
+    Object.keys(watchMap).forEach((docId) => {
+        watchMap[docId]();
+    });
+    firebase.auth().signOut();
+};
 
 export const getCurrentUser = () => firebase.auth().currentUser;
 
@@ -85,13 +93,28 @@ export const getCurrentMatch = async () => {
     return snapshotToArray(currentMatchSnapshot)[0];
 };
 
+export const watchDoc = async (collection, docId, onSnapShot, onError) => {
+    const doc = db.collection(collection).doc(docId);
+    if (watchMap[`${collection}-${docId}`]) {
+        console.log(`Unsubbing from doc: ${collection}/${docId}`);
+        watchMap[`${collection}-${docId}`]();
+    }
+    const unsub = doc.onSnapshot((docUpdate) => {
+        if (docUpdate.data()) {
+            onSnapShot({ id: docUpdate.id, ...docUpdate.data() });
+        } else {
+            onSnapShot();
+        }
+    }, onError);
+    watchMap[`${collection}-${docId}`] = unsub;
+};
 export const getMatches = async (stateFilter) => {
     const matchesRef = db.collection('matches');
     let snapshot;
     if (stateFilter) {
-        snapshot = await matchesRef.where('state', '==', stateFilter).orderBy('created').limit(100).get();
+        snapshot = await matchesRef.where('state', '==', stateFilter).orderBy('expires').limit(10).get();
     } else {
-        snapshot = await matchesRef.get();
+        snapshot = await matchesRef.orderBy('expires').limit(10).get();
     }
     return snapshotToArray(snapshot);
 };
@@ -103,6 +126,21 @@ export const getCompletedMatches = async () => {
         completedMatches = userData.data().completedMatches;
     }
     return completedMatches;
+};
+
+export const getCurrentUserStatsData = async () => {
+    return await db.collection('userStats').doc(firebase.auth().currentUser.uid).get();
+};
+
+export const getAllUserStatsData = async (orderBy, direction = 'asc') => {
+    const userStatsDataRef = db.collection('userStats');
+    let snapshot;
+    if (orderBy) {
+        snapshot = await userStatsDataRef.orderBy(orderBy, direction).limit(100).get();
+    } else {
+        snapshot = await userStatsDataRef.orderBy('displayName').limit(100).get();
+    }
+    return snapshotToArray(snapshot);
 };
 
 export const getBungieAuthUrl = async () => {

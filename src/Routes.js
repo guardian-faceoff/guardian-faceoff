@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Profile from './components/Profile';
 import Matches from './components/Matches';
 import CompletedMatches from './components/CompletedMatches';
+import Leaderboard from './components/Leaderboard';
 import { AppContext } from './AppContext';
 
 const useStyles = makeStyles((theme) => ({
@@ -48,6 +49,9 @@ const App = () => {
                     </Route>
                     <Route exact path="/completedMatches">
                         <CompletedMatches />
+                    </Route>
+                    <Route exact path="/leaderboard">
+                        <Leaderboard />
                     </Route>
                     <Redirect to="/" />
                 </Switch>

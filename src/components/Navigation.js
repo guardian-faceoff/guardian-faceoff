@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AppBar, Toolbar, IconButton, Typography, Menu, MenuItem, Button, Box, Drawer, List, ListItem, ListItemText } from '@material-ui/core';
 import { fade, makeStyles } from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -7,6 +7,7 @@ import PropTypes from 'prop-types';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import { getCurrentUser } from '../FirebaseHelper';
 import { AppContext } from '../AppContext';
+import { MatchProcessCountdown } from './MatchProcessCountdown';
 
 const useStyles = makeStyles((theme) => ({
     grow: {
@@ -73,7 +74,7 @@ const useStyles = makeStyles((theme) => ({
         marginLeft: theme.spacing(),
     },
     drawerContent: {
-        width: 200,
+        width: 225,
     },
     appBar: {
         zIndex: theme.zIndex.drawer + 1,
@@ -82,7 +83,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Navigation = ({ history }) => {
     const classes = useStyles();
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
     const matches = useMediaQuery('(min-width:960px)');
     const { login, logout, appState } = useContext(AppContext);
 
@@ -100,7 +101,6 @@ const Navigation = ({ history }) => {
         await logout();
         history.push('/');
     };
-
     const renderMenu = (
         <Menu anchorEl={anchorEl} keepMounted open={isMenuOpen} onClose={handleMenuClose} getContentAnchorEl={null} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} transformOrigin={{ vertical: 'top', horizontal: 'center' }}>
             <MenuItem
@@ -128,7 +128,7 @@ const Navigation = ({ history }) => {
                         handleMenuClose();
                     }}
                 >
-                    Matches
+                    Available Matches
                 </MenuItem>
             )}
             {getCurrentUser() && (
@@ -138,7 +138,17 @@ const Navigation = ({ history }) => {
                         handleMenuClose();
                     }}
                 >
-                    Completed Matches
+                    My Completed Matches
+                </MenuItem>
+            )}
+            {getCurrentUser() && (
+                <MenuItem
+                    onClick={() => {
+                        history.push('/leaderboard');
+                        handleMenuClose();
+                    }}
+                >
+                    Leaderboard
                 </MenuItem>
             )}
             {getCurrentUser() && (
@@ -213,6 +223,7 @@ const Navigation = ({ history }) => {
                         Guardian Faceoff
                     </Typography>
                     <Box className={classes.grow} />
+                    {getCurrentUser() && matches && <MatchProcessCountdown matchProcessorData />}
                     {getNavbarControls()}
                 </Toolbar>
             </AppBar>
@@ -240,7 +251,7 @@ const Navigation = ({ history }) => {
                                         }}
                                     >
                                         {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
-                                        <ListItemText primary="Matches" />
+                                        <ListItemText primary="Available Matches" />
                                     </ListItem>
                                     <ListItem
                                         button
@@ -249,7 +260,16 @@ const Navigation = ({ history }) => {
                                         }}
                                     >
                                         {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
-                                        <ListItemText primary="Completed Matches" />
+                                        <ListItemText primary="My Completed Matches" />
+                                    </ListItem>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            history.push('/leaderboard');
+                                        }}
+                                    >
+                                        {/* <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <InboxIcon />}</ListItemIcon> */}
+                                        <ListItemText primary="Leaderboard" />
                                     </ListItem>
                                     <ListItem
                                         button

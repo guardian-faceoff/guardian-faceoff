@@ -16,21 +16,21 @@ const useStyles = makeStyles((theme) => {
         box: {
             display: 'flex',
             flexDirection: 'column',
-            height: '100vh',
-            maWidth: '100vw',
+            // height: '100vh',
+            maxWidth: '100vw',
         },
         boxSmall: {
             display: 'flex',
             flexDirection: 'column',
-            height: '100vh',
-            maWidth: '100vw',
-            marginLeft: 200,
+            // height: '100vh',
+            maxWidth: '100vw',
+            marginLeft: 225,
         },
         container: {
             flex: '1 auto',
             overflow: 'auto',
-            marginTop: theme.spacing(),
-            marginBottom: theme.spacing(),
+            paddingTop: theme.spacing(),
+            paddingBottom: theme.spacing(),
         },
     };
 });

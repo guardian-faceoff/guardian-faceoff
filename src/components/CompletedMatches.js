@@ -12,9 +12,7 @@ import Constants from '../Constants.json';
 
 const useStyles = makeStyles((theme) => {
     return {
-        grid: {
-            height: '100vh',
-        },
+        grid: {},
         paper: {
             width: '45em',
             padding: theme.spacing(4),
@@ -142,7 +140,7 @@ const CompletedMatches = ({ history }) => {
             <Grid item>
                 <Box>
                     <Typography className={classes.title} variant="h4">
-                        Completed Matches
+                        My Completed Matches
                     </Typography>
                     {!loading && getCurrentUser() && completedMatchesState && <Box>{getMatchesJsx()}</Box>}
                     {!loading && getCurrentUser() && !completedMatchesState && <Box>No completed matches to display.</Box>}

@@ -110,7 +110,7 @@ const Profile = ({ history }) => {
                     {!userLoading && getCurrentUser() && userState && (
                         <Box>
                             <Typography className={classes.title} variant="h4">{`${getCurrentUser().displayName}`}</Typography>
-                            <img className={classes.profilePic} alt="profile" src={getCurrentUser().photoURL} />
+                            <img className={classes.profilePic} alt="profile" src={userState.currentCharacter.emblemUrl} />
                             <Box>You are currently set to play on:</Box>
                             <Box>{Constants.MEMBERSHIP_TYPES[userState.membership.membershipType]}</Box>
                             <img className={classes.membershipIcon} alt="current-membership" src={userState.membership.iconURL} />

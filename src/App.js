@@ -1,7 +1,7 @@
 import React from 'react';
 import { HashRouter } from 'react-router-dom';
 import { createMuiTheme, ThemeProvider, makeStyles } from '@material-ui/core/styles';
-import { Box, Toolbar } from '@material-ui/core';
+import { Box, Toolbar, Typography } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { grey, teal } from '@material-ui/core/colors';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
@@ -16,13 +16,11 @@ const useStyles = makeStyles((theme) => {
         box: {
             display: 'flex',
             flexDirection: 'column',
-            // height: '100vh',
             maxWidth: '100vw',
         },
         boxSmall: {
             display: 'flex',
             flexDirection: 'column',
-            // height: '100vh',
             maxWidth: '100vw',
             marginLeft: 225,
         },
@@ -31,6 +29,16 @@ const useStyles = makeStyles((theme) => {
             overflow: 'auto',
             paddingTop: theme.spacing(),
             paddingBottom: theme.spacing(),
+        },
+        version: {
+            position: 'fixed',
+            left: 0,
+            bottom: 0,
+            paddingLeft: theme.spacing(),
+            paddingRight: theme.spacing(),
+            zIndex: 99999,
+            background: theme.palette.secondary.main,
+            color: theme.palette.secondary.contrastText,
         },
     };
 });
@@ -69,6 +77,9 @@ const App = () => {
                                     <Routes />
                                     <SnackBarManager />
                                 </Box>
+                            </Box>
+                            <Box className={classes.version}>
+                                <Typography variant="overline">PRE-ALPHA</Typography>
                             </Box>
                         </ThemeProvider>
                     );
